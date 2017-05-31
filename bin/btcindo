@@ -420,6 +420,40 @@ To show a ticker:
 
  % btcindo ticker
 
+To show latest trades:
+
+ % btcindo trades
+
+To show your balance:
+
+ % btcindo balance
+
+To show transaction history (Rupiah deposits & withdrawals):
+
+ % btcindo tx-history
+
+To show your trade history:
+
+ % btcindo trade-history
+ % btcindo trade-history --time-from 2017-05-31
+ % btcindo trade-history --trade-id-from 1200000 --trade-id-to 1200100
+
+To show your open/pending orders:
+
+ % btcindo open-orders
+
+To create a new order:
+
+ # buy Rp 1.500.000-worth of bitcoin at Rp 34.000.000/BTC
+ % btcindo trade buy 34000000 --idr 1500000
+
+ # sell 0.01 bitcoin at Rp 38.000.000/BTC (create-order is alias for trade)
+ % btcindo create-order sell 38000000 --btc 0.01
+
+Cancel an existing order:
+
+ % btcindo cancel-order sell 2345678
+
 For other available commands, see the help message or documentation:
 
  % btcindo -h
