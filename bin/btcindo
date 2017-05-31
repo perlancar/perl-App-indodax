@@ -1,0 +1,425 @@
+#!perl
+
+# DATE
+# VERSION
+
+use 5.010001;
+use strict;
+use warnings;
+use Perinci::CmdLine::Any;
+
+our %SPEC;
+
+my $sch_type = ['str*', in=>['buy','sell']];
+my $sch_txtype = ['str*', in=>['deposit','withdraw']];
+my $sch_currency = ['str*', in=>[qw/btc bts crave doge drk eth idr ltc nbt nem nxt sdc str xpy xrp/]];
+
+my %args_tapi = (
+    key => {
+        schema => ['str*', match=>qr/\A\w{8}-\w{8}-\w{8}-\w{8}-\w{8}\z/],
+        req => 1,
+    },
+    secret => {
+        schema => ['str*', match=>qr/\A[0-9a-z]{80}\z/],
+        req => 1,
+    },
+);
+
+my %arg_filter_type = (
+    type => {
+        summary => 'Filter by type (buy/sell)',
+        schema => $sch_type,
+        tags => ['category:filtering'],
+    },
+);
+
+my %arg_filter_txtype = (
+    txtype => {
+        summary => 'Filter by transaction type (deposit/withdraw)',
+        schema => $sch_txtype,
+        tags => ['category:filtering'],
+    },
+);
+
+my %arg_filter_currency = (
+    txtype => {
+        summary => 'Filter by currency',
+        schema => $sch_currency,
+        tags => ['category:filtering'],
+    },
+);
+
+my %args_filter_time = (
+    time_from => {
+        summary => 'Filter by beginning time',
+        schema => 'date*',
+        tags => ['category:filtering'],
+    },
+    time_to => {
+        summary => 'Filter by ending time',
+        schema => 'date*',
+        tags => ['category:filtering'],
+    },
+);
+
+my %args_filter_trade_id = (
+    trade_id_from => {
+        summary => 'Filter by beginning trade ID',
+        schema => 'int*',
+        tags => ['category:filtering'],
+    },
+    trade_id_to => {
+        summary => 'Filter by ending trade ID',
+        schema => 'int*',
+        tags => ['category:filtering'],
+    },
+);
+
+my %arg_pair = (
+    pair => {
+        summary => 'Pair',
+        schema => ['str*', match=>qr/\A\w{3}_\w{3}\z/],
+        default => 'btc_idr',
+    },
+);
+
+my %arg_0_type = (
+    type => {
+        schema => $sch_type,
+        req => 1,
+        pos => 0,
+        cmdline_aliases => {
+            buy  => {is_flag=>1, summary => 'Alias for --type buy' , code => sub { $_[0]{type} = 'buy'  }},
+            sell => {is_flag=>1, summary => 'Alias for --type sell', code => sub { $_[0]{type} = 'sell' }},
+        },
+    },
+);
+
+my $btcindo;
+
+sub _init {
+    require Finance::BTCIndo;
+    my ($args) = @_;
+    $btcindo //= Finance::BTCIndo->new(
+        (key    => $args->{key}   ) x !!(defined $args->{key}),
+        (secret => $args->{secret}) x !!(defined $args->{secret}),
+    );
+}
+
+$SPEC{':package'} = {
+    v => 1.1,
+    summary => 'CLI for bitcoin.co.id',
+};
+
+$SPEC{ticker} = {
+    v => 1.1,
+    summary => 'Show ticker',
+    args => {
+    },
+};
+sub ticker {
+    my %args = @_;
+    _init(\%args);
+    [200, "OK", $btcindo->get_ticker->{ticker}];
+}
+
+$SPEC{trades} = {
+    v => 1.1,
+    summary => 'Show latest trades',
+    args => {
+        %arg_filter_type,
+    },
+};
+sub trades {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_trades;
+
+    my @rows;
+    for my $row (@$res) {
+        if ($args{type}) {
+            next unless $row->{type} eq $args{type};
+        }
+        $row->{idr} = int($row->{amount} * $row->{price});
+        push @rows, $row;
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/date tid    type price  amount idr/];
+    $resmeta->{'table.field_aligns'}  = [qw/left number left right  right  right/];
+    $resmeta->{'table.field_formats'} = ['iso8601_datetime', undef, undef, $fnum0, $fnum8, $fnum0];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
+$SPEC{info} = {
+    v => 1.1,
+    summary => 'Show balance, server timestamp, and some other information',
+    args => {
+        %args_tapi,
+    },
+};
+sub info {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_info;
+    [200, "OK", $res];
+}
+
+$SPEC{balance} = {
+    v => 1.1,
+    summary => 'Show current balances',
+    args => {
+        %args_tapi,
+        hold => {
+            summary => 'Show held balance instead of available-to-trade balance',
+            schema => ['bool*', is=>1],
+        },
+    },
+};
+sub balance {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_info;
+    [200, "OK", $args{hold} ? $res->{return}{balance_hold} : $res->{return}{balance}];
+}
+
+$SPEC{tx_history} = {
+    v => 1.1,
+    summary => 'Show history of deposits and withdrawals',
+    args => {
+        %args_tapi,
+        %arg_filter_txtype,
+        %arg_filter_currency,
+    },
+};
+sub tx_history {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_tx_history->{return};
+
+    # rearrange into a single table
+    my @rows;
+    for my $txtype (sort keys %$res) {
+        my $v1 = $res->{$txtype};
+        for my $currency (sort keys %$v1) {
+            my $v2 = $v1->{$currency};
+            for my $row (@$v2) {
+                next if $args{txtype} && $txtype ne $args{txtype};
+                next if $args{currency} && $currency ne $args{currency};
+                $row->{txtype} = $txtype;
+                $row->{currency} = $currency;
+                push @rows, $row;
+            }
+        }
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/txtype currency type deposit_id amount rp fee submit_time success_time status/];
+    $resmeta->{'table.field_formats'} = [undef, undef, undef, undef, $fnum0, $fnum0, $fnum0, 'iso8601_datetime', 'iso8601_datetime', undef];
+    $resmeta->{'table.field_aligns'}  = [qw/left left left right right right right left left left/];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
+$SPEC{trade_history} = {
+    v => 1.1,
+    summary => 'Show history of trades',
+    args => {
+        %args_tapi,
+        %arg_pair,
+        # XXX count
+        # XXX order asc/desc
+        %args_filter_trade_id,
+        %args_filter_time,
+    },
+};
+sub trade_history {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_trade_history(
+        pair => $args{pair},
+        (since => $args{time_from}) x !!(defined $args{time_from}),
+        (end   => $args{time_to}  ) x !!(defined $args{time_to}  ),
+        (from_id => $args{trade_id_from}) x !!(defined $args{trade_id_from}),
+        (end_id  => $args{trade_id_to}  ) x !!(defined $args{trade_id_to}  ),
+    )->{return};
+
+    # rearrange into a single table
+    my @rows;
+    for my $row (@{ $res->{trades} }) {
+        push @rows, $row;
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/trade_id order_id trade_time type btc price fee/];
+    $resmeta->{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $fnum8, $fnum0, $fnum0];
+    $resmeta->{'table.field_aligns'}  = [qw/right right left left right right right/];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
+$SPEC{open_orders} = {
+    v => 1.1,
+    summary => 'Show open orders',
+    args => {
+        %args_tapi,
+        %arg_pair,
+    },
+};
+sub open_orders {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_open_orders(
+        pair => $args{pair},
+    )->{return};
+
+    # rearrange into a single table
+    my @rows;
+    for my $row (@{ $res->{orders} }) {
+        push @rows, $row;
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/order_id submit_time type price order_idr remain_idr order_btc remain_btc/];
+    $resmeta->{'table.field_formats'} = [undef, 'iso8601_datetime', undef, $fnum0, $fnum0, $fnum0, $fnum8, $fnum8];
+    $resmeta->{'table.field_aligns'}  = [qw/right left left right right right right right/];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
+$SPEC{create_order} = {
+    v => 1.1,
+    summary => 'Create a new order',
+    args => {
+        %args_tapi,
+        %arg_pair,
+        %arg_0_type,
+        price => {
+            schema => 'posint*',
+            req => 1,
+            pos => 1,
+        },
+        idr => {
+            schema => 'posint*',
+            # Perinci::Sub::GetArgs::Argv not smart enough yet
+            #pos => 2,
+        },
+        btc => {
+            schema => 'float*',
+            # Perinci::Sub::GetArgs::Argv not smart enough yet
+            #pos => 2,
+        },
+    },
+    args_rels => {
+        req_one => [qw/idr btc/],
+    },
+};
+sub create_order {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->create_order(
+        pair => $args{pair},
+        type => $args{type},
+        price => $args{price},
+        (idr => $args{idr}) x !!(defined $args{idr}),
+        (btc => $args{btc}) x !!(defined $args{btc}),
+    )->{return};
+
+    [200, "OK"];
+}
+
+$SPEC{cancel_order} = {
+    v => 1.1,
+    summary => 'Cancel an existing open order',
+    args => {
+        %args_tapi,
+        %arg_0_type,
+        order_id => {
+            schema => 'posint*',
+            req => 1,
+            pos => 1,
+        },
+    },
+};
+sub cancel_order {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->cancel_order(
+        type => $args{type},
+        order_id => $args{order_id},
+    )->{return};
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/order_id submit_time type price order_idr remain_idr order_btc remain_btc/];
+    $resmeta->{'table.field_formats'} = [undef, 'iso8601_datetime', undef, $fnum0, $fnum0, $fnum0, $fnum8, $fnum8];
+    $resmeta->{'table.field_aligns'}  = [qw/right left left right right right right right/];
+
+    [200, "OK"];
+}
+
+# MAIN
+
+Perinci::CmdLine::Any->new(
+    url => '/main/',
+    subcommands => {
+        ticker => { url => '/main/ticker', },
+        trades => { url => '/main/trades', },
+        # TODO depth
+        info => { url => '/main/info', },
+        balance => { url => '/main/balance', },
+        "tx-history" => { url => '/main/tx_history', },
+        "trade-history" => { url => '/main/trade_history', },
+        "open-orders" => { url => '/main/open_orders', },
+        "create-order" => { url => '/main/create_order', },
+        "cancel-order" => { url => '/main/cancel_order', },
+
+        # aliases
+        "trade" => { url => '/main/create_order', },
+    },
+)->run;
+
+# ABSTRACT:
+# PODNAME:
+
+=head1 SYNOPSIS
+
+First, create an account at L<bitcoin.co.id>, create the trade API key then
+insert the API key and secret key in F<~/.config/btcindo.conf>. Since the
+configuration file contains the API secret key, please make sure that the
+permission of the file is set so that unauthorized users cannot read it (e.g.
+chmod it to 0600).
+
+ # In ~/.config/btcindo.conf
+ key = ...
+ secret = ...
+
+To show a ticker:
+
+ % btcindo ticker
+
+For other available commands, see the help message or documentation:
+
+ % btcindo -h
