@@ -156,6 +156,79 @@ sub trades {
     [200, "OK", \@rows, $resmeta];
 }
 
+$SPEC{depth} = {
+    v => 1.1,
+    summary => 'Show depth',
+    args => {
+        %arg_filter_type,
+    },
+};
+sub depth {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_depth;
+    my @rows;
+    for my $type (keys %$res) {
+        next if $args{type} && $type ne $args{type};
+        my $v1 = $res->{$type};
+        for my $row0 (@$v1) {
+            my $row = {
+                type => $type,
+                idr  => $row0->[0],
+                btc  => $row0->[1],
+            };
+            push @rows, $row;
+        }
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/type idr btc/];
+    $resmeta->{'table.field_aligns'}  = [qw/left right right/];
+    $resmeta->{'table.field_formats'} = [undef, $fnum0, $fnum8];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
+$SPEC{price_history} = {
+    v => 1.1,
+    summary => 'Show price history, which can be used to draw candlestick chart',
+    description => <<'_',
+
+The function will return an array of records. Each record is an array with the
+following data:
+
+    [timestamp-in-unix-epoch, open, high, low, close]
+
+_
+    args => {
+    },
+};
+sub price_history {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = $btcindo->get_price_history->{chart};
+
+    my @rows;
+    for my $row (@$res) {
+        $row->[0] /= 1000;
+        push @rows, $row;
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+
+    my $resmeta = {};
+    $resmeta->{'table.fields'}        = [qw/time open high low close vol_btc/];
+    $resmeta->{'table.field_aligns'}  = [qw/left right right right right number/];
+    $resmeta->{'table.field_formats'} = ['iso8601_datetime', $fnum0, $fnum0, $fnum0, $fnum0, undef];
+
+    [200, "OK", \@rows, $resmeta];
+}
+
 $SPEC{info} = {
     v => 1.1,
     summary => 'Show balance, server timestamp, and some other information',
@@ -385,9 +458,12 @@ sub cancel_order {
 Perinci::CmdLine::Any->new(
     url => '/main/',
     subcommands => {
+        # public
         ticker => { url => '/main/ticker', },
         trades => { url => '/main/trades', },
-        # TODO depth
+        depth => { url => '/main/depth', },
+        "price-history" => { url => '/main/price_history', },
+
         info => { url => '/main/info', },
         balance => { url => '/main/balance', },
         "tx-history" => { url => '/main/tx_history', },
