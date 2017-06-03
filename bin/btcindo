@@ -205,13 +205,17 @@ following data:
 
 _
     args => {
+        period => {
+            schema => ['str*', in=>[qw/day all/]],
+            default => 'day',
+        },
     },
 };
 sub price_history {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_price_history->{chart};
+    my $res = $btcindo->get_price_history(period => $args{period})->{chart};
 
     my @rows;
     for my $row (@$res) {
