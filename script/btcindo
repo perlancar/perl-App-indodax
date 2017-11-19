@@ -291,9 +291,9 @@ sub balance {
     for my $currency (sort keys %{$res->{return}{balance}}) {
         my $rec = {};
         $rec->{currency} = $currency;
-        $rec->{balance_available} = $res->{return}{balance}{$currency};
-        $rec->{balance_held}      = $res->{return}{balance_hold}{$currency};
-        $rec->{balance_total}     = $res->{return}{balance}{$currency} + $res->{return}{balance_hold}{$currency};
+        $rec->{balance_available} = $res->{return}{balance}{$currency} // 0;
+        $rec->{balance_held}      = $res->{return}{balance_hold}{$currency} // 0;
+        $rec->{balance_total}     = ($res->{return}{balance}{$currency} // 0) + ($res->{return}{balance_hold}{$currency} // 0);
         push @recs, $rec;
     }
     [200, "OK", \@recs, {'table.fields'=>[qw/currency balance_available balance_held balance_total/]}];
