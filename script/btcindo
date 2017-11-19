@@ -253,10 +253,6 @@ $SPEC{balance} = {
     summary => 'Show current balances',
     args => {
         %args_tapi,
-        hold => {
-            summary => 'Show held balance instead of available-to-trade balance',
-            schema => ['bool*', is=>1],
-        },
     },
 };
 sub balance {
@@ -264,7 +260,16 @@ sub balance {
     _init(\%args);
 
     my $res = $btcindo->get_info;
-    [200, "OK", $args{hold} ? $res->{return}{balance_hold} : $res->{return}{balance}];
+    my @recs;
+    for my $currency (sort keys %{$res->{return}{balance}}) {
+        my $rec = {};
+        $rec->{currency} = $currency;
+        $rec->{balance_available} = $res->{return}{balance}{$currency};
+        $rec->{balance_held}      = $res->{return}{balance_hold}{$currency};
+        $rec->{balance_total}     = $res->{return}{balance}{$currency} + $res->{return}{balance_hold}{$currency};
+        push @recs, $rec;
+    }
+    [200, "OK", \@recs, {'table.fields'=>[qw/currency balance_available balance_held balance_total/]}];
 }
 
 $SPEC{tx_history} = {
