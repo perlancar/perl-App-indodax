@@ -12,7 +12,10 @@ our %SPEC;
 
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
-my $sch_currency = ['str*', in=>[qw/bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc/]];
+my $sch_currency = ['str*', in=>[
+    qw/bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc/, # IDR markets
+    qw/dash xlm xem/, # BTC markets
+]];
 
 my %args_tapi = (
     key => {
@@ -78,7 +81,30 @@ my %args_filter_trade_id = (
 my %arg_pair = (
     pair => {
         summary => 'Pair',
-        schema => ['str*', match=>qr/\A\w{3}_\w{3}\z/],
+        schema => ['str*', {
+            match=>qr/\A\w{3}_\w{3}\z/,
+            in=>[
+                'btc_idr',
+                'bch_idr',
+                'eth_idr',
+                'etc_idr',
+                'ltc_idr',
+                'waves_idr',
+                'xlm_idr',
+                'xrp_idr',
+                'xzc_idr',
+
+                'bts_btc',
+                'dash_btc',
+                'doge_btc',
+                'eth_btc',
+                'ltc_btc',
+                'nxt_btc',
+                'xlm_btc',
+                'xem_btc',
+                'xrp_btc',
+            ],
+        }],
         default => 'btc_idr',
     },
 );
