@@ -511,6 +511,7 @@ Perinci::CmdLine::Any->new(
         # aliases
         "trade" => { url => '/main/create_order', },
     },
+    log => 1,
 )->run;
 
 # ABSTRACT:
