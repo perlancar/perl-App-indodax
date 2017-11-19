@@ -6,15 +6,20 @@
 use 5.010001;
 use strict;
 use warnings;
+use Log::ger;
+
 use Perinci::CmdLine::Any;
 
 our %SPEC;
 
+my @idr_market_currencies = qw(bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc);
+my @btc_market_currencies = qw(dash xem xlm);
+
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
 my $sch_currency = ['str*', in=>[
-    qw/bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc/, # IDR markets
-    qw/dash xlm xem/, # BTC markets
+    @idr_market_currencies,
+    @btc_market_currencies,
 ]];
 
 my %args_tapi = (
@@ -280,6 +285,10 @@ $SPEC{balance} = {
     summary => 'Show current balances',
     args => {
         %args_tapi,
+        with_idr_estimates => {
+            summary => 'Also show the value of all assets in IDR, using current prices information',
+            schema => 'bool*',
+        },
     },
 };
 sub balance {
@@ -288,15 +297,83 @@ sub balance {
 
     my $res = $btcindo->get_info;
     my @recs;
+    my @idr_markets;
+    my @btc_markets;
     for my $currency (sort keys %{$res->{return}{balance}}) {
         my $rec = {};
         $rec->{currency} = $currency;
-        $rec->{balance_available} = $res->{return}{balance}{$currency} // 0;
-        $rec->{balance_held}      = $res->{return}{balance_hold}{$currency} // 0;
-        $rec->{balance_total}     = ($res->{return}{balance}{$currency} // 0) + ($res->{return}{balance_hold}{$currency} // 0);
+        $rec->{bal_avail} = $res->{return}{balance}{$currency} // 0;
+        $rec->{bal_held}  = $res->{return}{balance_hold}{$currency} // 0;
+        $rec->{bal_total} = ($res->{return}{balance}{$currency} // 0) + ($res->{return}{balance_hold}{$currency} // 0);
+        if ($currency eq 'idr') {
+            # do nothing
+        } elsif (grep {$currency eq $_} @idr_market_currencies) {
+            if ($rec->{bal_total} > 0) {
+                push @idr_markets, $currency;
+            }
+        } elsif ($rec->{bal_total} > 0 && grep {$currency eq $_} @btc_market_currencies) {
+            if ($rec->{bal_total} > 0) {
+                push @idr_markets, "btc" unless grep {$_ eq 'btc'} @idr_markets;
+                push @btc_markets, $currency;
+            }
+        } else {
+            return [500, "Don't know where to find current price for ".
+                        "'$currency' (not found in IDR markets nor BTC markets)"];
+        }
         push @recs, $rec;
     }
-    [200, "OK", \@recs, {'table.fields'=>[qw/currency balance_available balance_held balance_total/]}];
+
+    my %resmeta;
+    if ($args{with_idr_estimates}) {
+        my %idr_prices;
+        for my $currency (@idr_markets) {
+            my $res = $btcindo->get_ticker(pair => "${currency}_idr");
+            $idr_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
+        }
+        my %btc_prices;
+        for my $currency (@btc_markets) {
+            my $res = $btcindo->get_ticker(pair => "${currency}_btc");
+            $btc_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
+        }
+
+        my $tot_avail_est_idr = 0;
+        my $tot_held_est_idr  = 0;
+        my $tot_total_est_idr = 0;
+        for my $rec (@recs) {
+            my $currency = $rec->{currency};
+            if ($currency eq 'idr') {
+                $rec->{avail_est_idr} = $rec->{bal_avail};
+                $rec->{held_est_idr}  = $rec->{bal_held};
+                $rec->{total_est_idr} = $rec->{bal_total};
+            } elsif (grep {$currency eq $_} @idr_markets) {
+                $rec->{price_idr}     = $idr_prices{$currency};
+                $rec->{avail_est_idr} = ($idr_prices{$currency} // 0) * $rec->{bal_avail};
+                $rec->{held_est_idr}  = ($idr_prices{$currency} // 0) * $rec->{bal_held};
+                $rec->{total_est_idr} = ($idr_prices{$currency} // 0) * $rec->{bal_total};
+            } else {
+                # btc markets
+                $rec->{price_btc}     = $btc_prices{$currency};
+                $rec->{price_idr}     = ($idr_prices{btc} // 0) * ($btc_prices{$currency} // 0);
+                $rec->{avail_est_idr} = ($idr_prices{btc} // 0) * ($btc_prices{$currency} // 0) * $rec->{bal_avail};
+                $rec->{held_est_idr}  = ($idr_prices{btc} // 0) * ($btc_prices{$currency} // 0) * $rec->{bal_held};
+                $rec->{total_est_idr} = ($idr_prices{btc} // 0) * ($btc_prices{$currency} // 0) * $rec->{bal_total};
+            }
+            $tot_avail_est_idr += $rec->{avail_est_idr};
+            $tot_held_est_idr  += $rec->{held_est_idr};
+            $tot_total_est_idr += $rec->{total_est_idr};
+        }
+        push @recs, {
+            currency => 'est_idr',
+            avail_est_idr => $tot_avail_est_idr,
+            held_est_idr  => $tot_held_est_idr,
+            total_est_idr => $tot_total_est_idr,
+        };
+        $resmeta{'table.fields'} = [qw/currency bal_avail price_btc price_idr avail_est_idr bal_held held_est_idr bal_total total_est_idr/];
+    } else {
+        $resmeta{'table.fields'} = [qw/currency bal_avail bal_held bal_total/];
+    }
+
+    [200, "OK", \@recs, \%resmeta];
 }
 
 $SPEC{tx_history} = {
