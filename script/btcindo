@@ -12,7 +12,7 @@ our %SPEC;
 
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
-my $sch_currency = ['str*', in=>[qw/btc bts crave doge drk eth idr ltc nbt nem nxt sdc str xpy xrp/]];
+my $sch_currency = ['str*', in=>[qw/bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc/]];
 
 my %args_tapi = (
     key => {
