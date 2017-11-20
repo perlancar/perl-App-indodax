@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use Log::ger;
 
+use Math::Decimal qw(dec_cmp dec_mul dec_add dec_sub);
 use Perinci::CmdLine::Any;
 
 our %SPEC;
@@ -376,6 +377,102 @@ sub balance {
     [200, "OK", \@recs, \%resmeta];
 }
 
+$SPEC{profit} = {
+    v => 1.1,
+    summary => 'Calculate your profit',
+    args => {
+        %args_tapi,
+        %arg_pair,
+        %args_filter_time,
+    },
+};
+sub profit {
+    my %args = @_;
+    _init(\%args);
+
+    my $res = trade_history(%args);
+    return $res unless $res->[0] == 200;
+
+    my $fmt = "%.8f";
+
+    my ($currency1, $currency2) = $args{pair} =~ /(\w{3})_(\w{3})/;
+
+    my %buy_amts ; # key = formatted price, val = amount
+    my %sell_amts; # key = formatted price, val = amount
+    my $profit = 0;
+    for my $rec (reverse @{ $res->[2] }) {
+        my $price = sprintf($fmt, $rec->{price} + $rec->{fee});
+        my $amt = $rec->{$currency1};
+        if ($rec->{type} eq 'buy') {
+            #say "D:Buying $amt";
+            $buy_amts{$price} += $amt;
+            $profit -= $price * $amt;
+        } elsif ($rec->{type} eq 'sell') {
+            #say "D:Selling $amt";
+
+            $sell_amts{$price} += $amt;
+            $profit += $price * $amt;
+
+            # calculate current stock, eliminate the cheapest first
+            while ($amt > 0) {
+                # sanity check (can happen if we pick time range)
+                #die "BUG: Selling more than bought" unless keys %buy_amts;
+
+                $amt = sprintf($fmt, $amt); # XXX use Math::BigFloat
+                for my $price (sort {$a<=>$b} keys %buy_amts) {
+                    if ($buy_amts{$price} <= $amt) {
+                        $amt -= delete $buy_amts{$price};
+                    } else {
+                        $buy_amts{$price} -= $amt;
+                        $amt = 0;
+                    }
+                    $amt = sprintf($fmt, $amt);
+                    #use DD; dd \%buy_amts;
+                    #say "D:Remainder: $amt";
+                    last if $amt <= 0;
+                }
+            }
+        } else {
+            die "BUG: unknown type '$rec->{type}'";
+        }
+        #use DD; dd \%buy_amts;
+    }
+
+    my $tot_buy_price = 0;
+    my $tot_buy_amts  = 0;
+    my $avg_buy_price = 0;
+    for my $price (keys %buy_amts) {
+        $tot_buy_price += $buy_amts{$price} * $price;
+        $tot_buy_amts  += $buy_amts{$price};
+    }
+    $avg_buy_price = $tot_buy_price / $tot_buy_amts if $tot_buy_amts > 0;
+
+    my $tot_sell_price = 0;
+    my $tot_sell_amts  = 0;
+    my $avg_sell_price = 0;
+    for my $price (keys %sell_amts) {
+        $tot_sell_price += $sell_amts{$price} * $price;
+        $tot_sell_amts  += $sell_amts{$price};
+    }
+    $avg_sell_price = $tot_sell_price / $tot_sell_amts if $tot_sell_amts > 0;
+
+    my $res2 = $btcindo->get_ticker(pair => $args{pair})->{ticker};
+    my $cur_price = ($res2->{ticker}{buy} + $res2->{ticker}{sell}) / 2;
+
+    [200, "OK", {
+        avg_buy_price  => $avg_buy_price,
+        avg_sell_price => $avg_sell_price,
+        profit         => $profit,
+        amount_in_hand => $tot_buy_amts,
+        cur_price      => $cur_price,
+        asset_in_hand  => $tot_buy_amts * $cur_price,
+        'profit+asset_in_hand' => $profit + $tot_buy_amts * $cur_price,
+    }, {
+        'func.buy_amts'  => \%buy_amts,
+        'func.sell_amts' => \%sell_amts,
+    }];
+}
+
 $SPEC{tx_history} = {
     v => 1.1,
     summary => 'Show history of deposits and withdrawals',
@@ -452,7 +549,7 @@ sub trade_history {
 
     my $resmeta = {};
     $resmeta->{'table.fields'}        = [qw/trade_id order_id trade_time type btc price fee/];
-    $resmeta->{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $fnum8, $fnum0, $fnum0];
+    $resmeta->{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $fnum8, $fnum8, $fnum8];
     $resmeta->{'table.field_aligns'}  = [qw/right right left left right right right/];
 
     [200, "OK", \@rows, $resmeta];
@@ -579,6 +676,7 @@ Perinci::CmdLine::Any->new(
 
         info => { url => '/main/info', },
         balance => { url => '/main/balance', },
+        "profit" => { url => '/main/profit', },
         "tx-history" => { url => '/main/tx_history', },
         "trade-history" => { url => '/main/trade_history', },
         "open-orders" => { url => '/main/open_orders', },
