@@ -456,7 +456,7 @@ sub profit {
     }
     $avg_sell_price = $tot_sell_price / $tot_sell_amts if $tot_sell_amts > 0;
 
-    my $res2 = $btcindo->get_ticker(pair => $args{pair})->{ticker};
+    my $res2 = $btcindo->get_ticker(pair => $args{pair});
     my $cur_price = ($res2->{ticker}{buy} + $res2->{ticker}{sell}) / 2;
 
     [200, "OK", {
@@ -466,7 +466,7 @@ sub profit {
         amount_in_hand => $tot_buy_amts,
         cur_price      => $cur_price,
         asset_in_hand  => $tot_buy_amts * $cur_price,
-        'profit+asset_in_hand' => $profit + $tot_buy_amts * $cur_price,
+        profit_plus_asset_in_hand => $profit + $tot_buy_amts * $cur_price,
     }, {
         'func.buy_amts'  => \%buy_amts,
         'func.sell_amts' => \%sell_amts,
