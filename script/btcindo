@@ -13,6 +13,7 @@ use Perinci::CmdLine::Any;
 
 our %SPEC;
 
+my @currencies_have_markets = qw(idr btc); # you can spend these currencies to buy other currencies
 my @idr_market_currencies = qw(bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc);
 my @btc_market_currencies = qw(dash xem xlm);
 
@@ -400,44 +401,47 @@ sub profit {
     my %buy_amts ; # key = formatted price, val = amount
     my %sell_amts; # key = formatted price, val = amount
     my $profit = 0;
-    for my $rec (reverse @{ $res->[2] }) {
-        my $price = sprintf($fmt, $rec->{price} + $rec->{fee});
+
+    my $code_sell_or_buy_or_remove = sub {
+        my $rec = shift;
+        log_trace "record: %s", $rec;
+        my $price = sprintf($fmt, $rec->{price} + ($rec->{fee} // 0));
         my $amt = $rec->{$currency1};
         if ($rec->{type} eq 'buy') {
-            #say "D:Buying $amt";
             $buy_amts{$price} += $amt;
             $profit -= $price * $amt;
-        } elsif ($rec->{type} eq 'sell') {
-            #say "D:Selling $amt";
-
-            $sell_amts{$price} += $amt;
-            $profit += $price * $amt;
+        } elsif ($rec->{type} eq 'sell' || $rec->{type} eq 'remove') {
+            if ($rec->{type} eq 'sell') {
+                $sell_amts{$price} += $amt;
+                $profit += $price * $amt;
+            }
 
             # calculate current stock, eliminate the cheapest first
-            while ($amt > 0) {
+            while ($amt > 1e-10) {
                 # sanity check (can happen if we pick time range)
                 #die "BUG: Selling more than bought" unless keys %buy_amts;
 
-                $amt = sprintf($fmt, $amt); # XXX use Math::BigFloat
                 for my $price (sort {$a<=>$b} keys %buy_amts) {
-                    if ($buy_amts{$price} <= $amt) {
+                    if ($amt - $buy_amts{$price} >= 1e-10) {
                         $amt -= delete $buy_amts{$price};
                     } else {
                         $buy_amts{$price} -= $amt;
                         $amt = 0;
                     }
-                    $amt = sprintf($fmt, $amt);
-                    #use DD; dd \%buy_amts;
-                    #say "D:Remainder: $amt";
-                    last if $amt <= 0;
+                    last if $amt <= 1e-10;
                 }
             }
         } else {
             die "BUG: unknown type '$rec->{type}'";
         }
-        #use DD; dd \%buy_amts;
+        log_trace "stock: %s", \%buy_amts;
+    };
+
+    for my $rec (reverse @{ $res->[2] }) {
+        $code_sell_or_buy->($rec);
     }
 
+  AGAIN:
     my $tot_buy_price = 0;
     my $tot_buy_amts  = 0;
     my $avg_buy_price = 0;
@@ -455,6 +459,21 @@ sub profit {
         $tot_sell_amts  += $sell_amts{$price};
     }
     $avg_sell_price = $tot_sell_price / $tot_sell_amts if $tot_sell_amts > 0;
+
+    my $resbal = balance(%args);
+    return $resbal unless $resbal->[0] == 200;
+    my $actual_bal = 0;
+    for my $rec (@{$resbal->[2]}) {
+        if ($rec->{currency} eq $currency1) {
+            $actual_bal = $rec->{bal_total};
+            last;
+        }
+    }
+
+    if ($tot_$actual_bal > 1e-10) {
+        # actual balance is smaller, remove
+    }
+    # XXX if actual balance is larger?
 
     my $res2 = $btcindo->get_ticker(pair => $args{pair});
     my $cur_price = ($res2->{ticker}{buy} + $res2->{ticker}{sell}) / 2;
