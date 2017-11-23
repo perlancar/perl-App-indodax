@@ -8,12 +8,11 @@ use strict;
 use warnings;
 use Log::ger;
 
-use Math::Decimal qw(dec_cmp dec_mul dec_add dec_sub);
 use Perinci::CmdLine::Any;
 
 our %SPEC;
 
-my @idr_market_currencies = qw(bch btc bts doge drk etc eth idr ltc nem nxt str waves xrp xzc);
+my @idr_market_currencies = qw(bch btc btg bts doge drk etc eth idr ltc nem nxt str waves xrp xzc);
 my @btc_market_currencies = qw(dash xem xlm);
 
 my $sch_type = ['str*', in=>['buy','sell']];
