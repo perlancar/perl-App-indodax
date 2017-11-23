@@ -13,4 +13,4 @@ Please see included script L<btcindo>.
 
 =head1 SEE ALSO
 
-L<Finance::BTCInfo>
+L<Finance::BTCIndo>
