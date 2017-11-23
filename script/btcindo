@@ -675,7 +675,6 @@ Perinci::CmdLine::Any->new(
 
         info => { url => '/main/info', },
         balance => { url => '/main/balance', },
-        "profit" => { url => '/main/profit', },
         "tx-history" => { url => '/main/tx_history', },
         "trade-history" => { url => '/main/trade_history', },
         "open-orders" => { url => '/main/open_orders', },
@@ -684,6 +683,9 @@ Perinci::CmdLine::Any->new(
 
         # aliases
         "trade" => { url => '/main/create_order', },
+
+        # not yet
+        #"profit" => { url => '/main/profit', },
     },
     log => 1,
 )->run;
