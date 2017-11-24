@@ -19,7 +19,7 @@ my @market_pairs = (
     'etc_idr',
     'ltc_idr',
     'waves_idr',
-    'xlm_idr',
+    #'xlm_idr', # 2017-11-24 - currently invalid pair?
     'xrp_idr',
     'xzc_idr',
 
@@ -52,6 +52,10 @@ my @btc_market_currencies = do {
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
 my $sch_currency = ['str*', in=>\@currencies];
+my $sch_pair = ['str*', {
+    match=>qr/\A\w{3}_\w{3}\z/,
+    in=>\@market_pairs,
+}];
 
 my %args_tapi = (
     key => {
@@ -117,11 +121,17 @@ my %args_filter_trade_id = (
 my %arg_pair = (
     pair => {
         summary => 'Pair',
-        schema => ['str*', {
-            match=>qr/\A\w{3}_\w{3}\z/,
-            in=>\@pairs,
-        }],
+        schema => $sch_pair,
         default => 'btc_idr',
+    },
+);
+
+my %arg_0_pair = (
+    pair => {
+        summary => 'Pair',
+        schema => $sch_pair,
+        default => 'btc_idr',
+        pos => 0,
     },
 );
 
@@ -134,6 +144,15 @@ my %arg_0_type = (
             buy  => {is_flag=>1, summary => 'Alias for --type buy' , code => sub { $_[0]{type} = 'buy'  }},
             sell => {is_flag=>1, summary => 'Alias for --type sell', code => sub { $_[0]{type} = 'sell' }},
         },
+    },
+);
+
+my %arg_0_currency = (
+    currency => {
+        summary => 'Currency name',
+        schema => $sch_currency,
+        default => 'idr',
+        pos => 0,
     },
 );
 
@@ -157,7 +176,7 @@ $SPEC{ticker} = {
     v => 1.1,
     summary => 'Show ticker',
     args => {
-        %arg_pair,
+        %arg_0_pair,
     },
 };
 sub ticker {
@@ -387,12 +406,86 @@ sub balance {
     [200, "OK", \@recs, \%resmeta];
 }
 
+$SPEC{hold_details} = {
+    v => 1.1,
+    summary => 'Show in which open orders your currency is being held',
+    args => {
+        %args_tapi,
+        %arg_0_currency,
+    },
+};
+sub hold_details {
+    my %args = @_;
+    _init(\%args);
+
+    my $currency = $args{currency};
+    my $res = $btcindo->get_info;
+    my $bal      = $res->{return}{balance}{$currency}      // 0;
+    my $bal_held = $res->{return}{balance_hold}{$currency} // 0;
+
+    my @rows;
+    if ($bal_held > 0) {
+        for my $pair (@market_pairs) {
+            log_trace "pair=%s", $pair;
+            my $buy_with_currency;
+            my $currency2;
+            if ($pair =~ /\A(\w+)_\Q$currency\E\z/) {
+                $buy_with_currency = 1;
+                $currency2 = $1;
+            } elsif ($pair =~ /\A\Q$currency\E_(\w+)\z/) {
+                $buy_with_currency = 0;
+                $currency2 = $1;
+            } else {
+                next;
+            }
+            my $orders = $btcindo->get_open_orders(
+                pair => $pair,
+            )->{return}{orders};
+            for my $order (@$orders) {
+                if ($buy_with_currency) {
+                    next unless $order->{type} eq 'buy';
+                    push @rows, {
+                        order_id          => $order->{order_id},
+                        pair              => $pair,
+                        submit_time       => $order->{submit_time},
+                        type              => $order->{type},
+                        amount            => $order->{"remain_$currency"},
+                    };
+                } else {
+                    next unless $order->{type} eq 'sell';
+                    push @rows, {
+                        order_id          => $order->{order_id},
+                        pair              => $pair,
+                        submit_time       => $order->{submit_time},
+                        type              => $order->{type},
+                        amount            => $order->{"remain_$currency"},
+                    };
+                }
+            }
+        } # for pair
+        push @rows, {
+            pair => 'TOTAL',
+            amount => $bal_held,
+        };
+    }
+
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
+    my %resmeta;
+    $resmeta{'table.fields'}        = [qw/order_id pair submit_time type amount/];
+    $resmeta{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $currency eq 'idr' ? $fnum0 : $fnum8];
+    $resmeta{'table.field_aligns'}  = [qw/right    left left        left right/];
+
+    [200, "OK", \@rows, \%resmeta];
+}
+
 $SPEC{profit} = {
     v => 1.1,
     summary => 'Calculate your profit',
     args => {
         %args_tapi,
-        %arg_pair,
+        %arg_0_pair,
         %args_filter_time,
     },
 };
@@ -547,7 +640,7 @@ $SPEC{trade_history} = {
     summary => 'Show history of trades',
     args => {
         %args_tapi,
-        %arg_pair,
+        %arg_0_pair,
         # XXX count
         # XXX order asc/desc
         %args_filter_trade_id,
@@ -588,7 +681,7 @@ $SPEC{open_orders} = {
     summary => 'Show open orders',
     args => {
         %args_tapi,
-        %arg_pair,
+        %arg_0_pair,
     },
 };
 sub open_orders {
@@ -697,21 +790,22 @@ Perinci::CmdLine::Any->new(
     url => '/main/',
     subcommands => {
         # public
-        ticker => { url => '/main/ticker', },
-        trades => { url => '/main/trades', },
-        depth => { url => '/main/depth', },
+        ticker          => { url => '/main/ticker', },
+        trades          => { url => '/main/trades', },
+        depth           => { url => '/main/depth', },
         "price-history" => { url => '/main/price_history', },
 
-        info => { url => '/main/info', },
-        balance => { url => '/main/balance', },
-        "tx-history" => { url => '/main/tx_history', },
+        info            => { url => '/main/info', },
+        balance         => { url => '/main/balance', },
+        "tx-history"    => { url => '/main/tx_history', },
         "trade-history" => { url => '/main/trade_history', },
-        "open-orders" => { url => '/main/open_orders', },
-        "create-order" => { url => '/main/create_order', },
-        "cancel-order" => { url => '/main/cancel_order', },
+        "open-orders"   => { url => '/main/open_orders', },
+        "create-order"  => { url => '/main/create_order', },
+        "cancel-order"  => { url => '/main/cancel_order', },
+        "hold-details"  => { url => '/main/hold_details', },
 
         # aliases
-        "trade" => { url => '/main/create_order', },
+        "trade"         => { url => '/main/create_order', },
 
         # not yet
         #"profit" => { url => '/main/profit', },
