@@ -1,3 +1,11 @@
+0.009   2017-11-24 (PERLANCAR)
+
+	- Tweak Abstract.
+
+	- [Bugfix] Forgot to pass 'pair' argument to cancel_order()
+	  function.
+
+
 0.008   2017-11-24 (PERLANCAR)
 
 	- Add subcommands: cancel-orders, cancel-all-orders.
