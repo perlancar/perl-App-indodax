@@ -15,6 +15,7 @@ our %SPEC;
 my @market_pairs = (
     'btc_idr',
     'bch_idr',
+    'btg_idr',
     'eth_idr',
     'etc_idr',
     'ltc_idr',
