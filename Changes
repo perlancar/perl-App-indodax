@@ -1,3 +1,10 @@
+0.010   2017-11-24 (PERLANCAR)
+
+	- [ux] balance: Add -e as shortcut for --with-idr-estimates.
+
+	- Forgot to add pair: btg_idr.
+
+
 0.009   2017-11-24 (PERLANCAR)
 
 	- Tweak Abstract.
