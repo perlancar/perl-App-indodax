@@ -84,8 +84,16 @@ my %arg_filter_txtype = (
     },
 );
 
+my %arg_filter_pair = (
+    pair => {
+        summary => 'Filter by pair',
+        schema => $sch_pair,
+        tags => ['category:filtering'],
+    },
+);
+
 my %arg_filter_currency = (
-    txtype => {
+    currency => {
         summary => 'Filter by currency',
         schema => $sch_currency,
         tags => ['category:filtering'],
@@ -763,6 +771,7 @@ $SPEC{cancel_order} = {
     summary => 'Cancel an existing open order',
     args => {
         %args_tapi,
+        %arg_pair,
         %arg_0_type,
         order_id => {
             schema => 'posint*',
@@ -784,10 +793,96 @@ sub cancel_order {
     } else {
         $btcindo->cancel_order(
             type => $args{type},
+            pair => $args{pair},
             order_id => $args{order_id},
         );
         [200, "OK"];
     }
+}
+
+$SPEC{cancel_orders} = {
+    v => 1.1,
+    summary => 'Cancel one or more open orders matching criteria',
+    args => {
+        %args_tapi,
+        %arg_filter_pair,
+        %arg_filter_type,
+        %arg_filter_currency,
+    },
+    features => {
+        dry_run => 1,
+    },
+};
+sub cancel_orders {
+    my %args = @_;
+    _init(\%args);
+
+  PAIR:
+    for my $pair (@market_pairs) {
+        #log_trace "pair=%s", $pair;
+        if ($args{pair}) {
+            unless ($pair eq $args{pair}) {
+                log_trace "Skipped pair '$pair' because of pair filter";
+                next PAIR;
+            }
+        }
+        if ($args{currency}) {
+            unless ($pair =~ /\A\w+_\Q$args{currency}\E\z|\A\Q$args{currency}\E_\w+\z/) {
+                log_trace "Skipped pair '$pair' because of currency filter";
+                next PAIR;
+            }
+        }
+        my $orders;
+        eval {
+            $orders = $btcindo->get_open_orders(
+                pair => $pair,
+            )->{return}{orders};
+        };
+        if ($@) {
+            log_warn "Can't get open orders for pair $pair: $@, skipped";
+            next;
+        }
+      ORDER:
+        for my $order (@$orders) {
+            if ($args{type}) {
+                unless ($order->{type} eq $args{type}) {
+                    log_trace "Skipped order #$order->{order_id} (pair '$pair', type '$order->{type}') because of type filter";
+                    next ORDER;
+                }
+            }
+            if ($args{-dry_run}) {
+                log_info "[DRY RUN] Cancelling order #$order->{order_id} (pair $pair) ...";
+            } else {
+                log_info "Cancelling order #$order->{order_id} (pair $pair) ...";
+                eval {
+                    $btcindo->cancel_order(
+                        type => $args{type},
+                        order_id => $args{order_id},
+                    );
+                };
+                if ($@) {
+                    log_error "Failed cancelling order #$order->{order_id} (pair $pair): $@";
+                }
+            }
+        } # for order
+    } # for pair
+
+    [200, "OK"];
+}
+
+$SPEC{cancel_all_orders} = {
+    v => 1.1,
+    summary => 'Cancel all existing open orders',
+    args => {
+        %args_tapi,
+    },
+    features => {
+        dry_run => 1,
+    },
+};
+sub cancel_all_orders {
+    my %args = @_;
+    cancel_orders(%args);
 }
 
 # MAIN
@@ -801,17 +896,19 @@ Perinci::CmdLine::Any->new(
         depth           => { url => '/main/depth', },
         "price-history" => { url => '/main/price_history', },
 
-        info            => { url => '/main/info', },
-        balance         => { url => '/main/balance', },
-        "tx-history"    => { url => '/main/tx_history', },
-        "trade-history" => { url => '/main/trade_history', },
-        "open-orders"   => { url => '/main/open_orders', },
-        "create-order"  => { url => '/main/create_order', },
-        "cancel-order"  => { url => '/main/cancel_order', },
-        "hold-details"  => { url => '/main/hold_details', },
+        info                => { url => '/main/info', },
+        balance             => { url => '/main/balance', },
+        "tx-history"        => { url => '/main/tx_history', },
+        "trade-history"     => { url => '/main/trade_history', },
+        "open-orders"       => { url => '/main/open_orders', },
+        "create-order"      => { url => '/main/create_order', },
+        "cancel-order"      => { url => '/main/cancel_order', },
+        "cancel-orders"     => { url => '/main/cancel_orders', },
+        "cancel-all-orders" => { url => '/main/cancel_all_orders', },
+        "hold-details"      => { url => '/main/hold_details', },
 
         # aliases
-        "trade"         => { url => '/main/create_order', },
+        "trade" => { url => '/main/create_order', },
 
         # not yet
         #"profit" => { url => '/main/profit', },
@@ -870,7 +967,15 @@ To create a new order:
 
 Cancel an existing order:
 
- % btcindo cancel-order sell 2345678
+ % btcindo cancel-order sell 2345678 ;# btc_idr
+ % btcindo cancel-order sell 345678 --pair bch_idr
+
+Cancelling multiple orders in one go:
+
+ % btcindo cancel-all-orders
+ % btcindo cancel-orders --type buy
+ % btcindo cancel-orders --type buy --pair btc_idr
+ % btcindo cancel-orders --currency idr
 
 For other available commands, see the help message or documentation:
 
