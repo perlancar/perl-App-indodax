@@ -696,30 +696,40 @@ $SPEC{open_orders} = {
     summary => 'Show open orders',
     args => {
         %args_tapi,
-        %arg_0_pair,
+        %arg_filter_pair,
     },
 };
 sub open_orders {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_open_orders(
-        pair => $args{pair},
-    )->{return};
-
-    # rearrange into a single table
     my @rows;
-    for my $row (@{ $res->{orders} }) {
-        push @rows, $row;
+  PAIR:
+    for my $pair (@market_pairs) {
+        #log_trace "pair=%s", $pair;
+        if ($args{pair}) {
+            next unless $pair eq $args{pair};
+        }
+        my $orders;
+        eval {
+            $orders = $btcindo->get_open_orders(
+                pair => $pair,
+            )->{return}{orders};
+        };
+
+        for my $row (@$orders) {
+            $row->{pair} = $pair unless $args{pair};
+            push @rows, $row;
+        }
     }
 
     my $fnum0 = [number => {precision=>0}];
     my $fnum8 = [number => {precision=>8}];
 
     my $resmeta = {};
-    $resmeta->{'table.fields'}        = [qw/order_id submit_time type price order_idr remain_idr order_btc remain_btc/];
-    $resmeta->{'table.field_formats'} = [undef, 'iso8601_datetime', undef, $fnum0, $fnum0, $fnum0, $fnum8, $fnum8];
-    $resmeta->{'table.field_aligns'}  = [qw/right left left right right right right right/];
+    $resmeta->{'table.fields'}        = [qw/pair order_id submit_time type/];
+    $resmeta->{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef];
+    $resmeta->{'table.field_aligns'}  = [qw/left right left left right right right right right/];
 
     [200, "OK", \@rows, $resmeta];
 }
