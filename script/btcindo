@@ -327,6 +327,7 @@ $SPEC{balance} = {
         with_idr_estimates => {
             summary => 'Also show the value of all assets in IDR, using current prices information',
             schema => 'bool*',
+            cmdline_aliases => {e=>{}},
         },
     },
 };
