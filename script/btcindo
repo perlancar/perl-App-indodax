@@ -12,9 +12,37 @@ use Perinci::CmdLine::Any;
 
 our %SPEC;
 
-my @currencies_have_markets = qw(idr btc); # you can spend these currencies to buy other currencies
-my @idr_market_currencies = qw(bch btc btg bts doge drk etc eth idr ltc nem nxt str waves xrp xzc);
-my @btc_market_currencies = qw(dash xem xlm);
+my @market_pairs = (
+    'btc_idr',
+    'bch_idr',
+    'eth_idr',
+    'etc_idr',
+    'ltc_idr',
+    'waves_idr',
+    'xlm_idr',
+    'xrp_idr',
+    'xzc_idr',
+
+    'bts_btc',
+    'dash_btc',
+    'doge_btc',
+    'eth_btc',
+    'ltc_btc',
+    'nxt_btc',
+    'xlm_btc',
+    'xem_btc',
+    'xrp_btc',
+);
+my @idr_market_currencies = do {
+    my %res;
+    for (@market_pairs) { /\A(\w+)_idr\z/ and $res{$1}++ }
+    sort keys %res;
+};
+my @btc_market_currencies = do {
+    my %res;
+    for (@market_pairs) { /\A(\w+)_btc\z/ and $res{$1}++ }
+    sort keys %res;
+};
 
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
@@ -89,27 +117,7 @@ my %arg_pair = (
         summary => 'Pair',
         schema => ['str*', {
             match=>qr/\A\w{3}_\w{3}\z/,
-            in=>[
-                'btc_idr',
-                'bch_idr',
-                'eth_idr',
-                'etc_idr',
-                'ltc_idr',
-                'waves_idr',
-                'xlm_idr',
-                'xrp_idr',
-                'xzc_idr',
-
-                'bts_btc',
-                'dash_btc',
-                'doge_btc',
-                'eth_btc',
-                'ltc_btc',
-                'nxt_btc',
-                'xlm_btc',
-                'xem_btc',
-                'xrp_btc',
-            ],
+            in=>\@pairs,
         }],
         default => 'btc_idr',
     },
