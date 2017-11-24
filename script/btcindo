@@ -437,7 +437,7 @@ sub profit {
     };
 
     for my $rec (reverse @{ $res->[2] }) {
-        $code_sell_or_buy->($rec);
+        $code_sell_or_buy_or_remove->($rec);
     }
 
   AGAIN:
@@ -469,9 +469,9 @@ sub profit {
         }
     }
 
-    if ($tot_$actual_bal > 1e-10) {
+    #if ($tot_$actual_bal > 1e-10) {
         # actual balance is smaller, remove
-    }
+    #}
     # XXX if actual balance is larger?
 
     my $res2 = $btcindo->get_ticker(pair => $args{pair});
