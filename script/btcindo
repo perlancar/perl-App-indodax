@@ -19,7 +19,7 @@ my @market_pairs = (
     'etc_idr',
     'ltc_idr',
     'waves_idr',
-    #'xlm_idr', # 2017-11-24 - currently invalid pair?
+    'xlm_idr',
     'xrp_idr',
     'xzc_idr',
 
@@ -53,7 +53,7 @@ my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
 my $sch_currency = ['str*', in=>\@currencies];
 my $sch_pair = ['str*', {
-    match=>qr/\A\w{3}_\w{3}\z/,
+    match=>qr/\A\w{3,4}_\w{3,4}\z/,
     in=>\@market_pairs,
 }];
 
@@ -426,7 +426,7 @@ sub hold_details {
     my @rows;
     if ($bal_held > 0) {
         for my $pair (@market_pairs) {
-            log_trace "pair=%s", $pair;
+            #log_trace "pair=%s", $pair;
             my $buy_with_currency;
             my $currency2;
             if ($pair =~ /\A(\w+)_\Q$currency\E\z/) {
@@ -438,9 +438,16 @@ sub hold_details {
             } else {
                 next;
             }
-            my $orders = $btcindo->get_open_orders(
-                pair => $pair,
-            )->{return}{orders};
+            my $orders;
+            eval {
+                $orders = $btcindo->get_open_orders(
+                    pair => $pair,
+                )->{return}{orders};
+            };
+            if ($@) {
+                log_warn "Can't get open orders for pair $pair: $@, skipped";
+                next;
+            }
             for my $order (@$orders) {
                 if ($buy_with_currency) {
                     next unless $order->{type} eq 'buy';
