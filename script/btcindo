@@ -33,6 +33,11 @@ my @market_pairs = (
     'xem_btc',
     'xrp_btc',
 );
+my @currencies = do {
+    my %res;
+    for (@market_pairs) { /\A(\w+)_(\w+)\z/ or die; $res{$1}++; $res{$2}++ }
+    sort keys %res;
+};
 my @idr_market_currencies = do {
     my %res;
     for (@market_pairs) { /\A(\w+)_idr\z/ and $res{$1}++ }
@@ -46,10 +51,7 @@ my @btc_market_currencies = do {
 
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
-my $sch_currency = ['str*', in=>[
-    @idr_market_currencies,
-    @btc_market_currencies,
-]];
+my $sch_currency = ['str*', in=>\@currencies];
 
 my %args_tapi = (
     key => {
