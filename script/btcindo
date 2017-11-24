@@ -871,8 +871,9 @@ sub cancel_orders {
                 log_info "Cancelling order #$order->{order_id} (pair $pair) ...";
                 eval {
                     $btcindo->cancel_order(
-                        type => $args{type},
-                        order_id => $args{order_id},
+                        type => $order->{type},
+                        pair => $pair,
+                        order_id => $order->{order_id},
                     );
                 };
                 if ($@) {
