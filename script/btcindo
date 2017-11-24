@@ -697,6 +697,7 @@ $SPEC{open_orders} = {
     args => {
         %args_tapi,
         %arg_filter_pair,
+        %arg_filter_type,
     },
 };
 sub open_orders {
@@ -708,7 +709,7 @@ sub open_orders {
     for my $pair (@market_pairs) {
         #log_trace "pair=%s", $pair;
         if ($args{pair}) {
-            next unless $pair eq $args{pair};
+            next PAIR unless $pair eq $args{pair};
         }
         my $orders;
         eval {
@@ -717,7 +718,11 @@ sub open_orders {
             )->{return}{orders};
         };
 
+      ORDER:
         for my $row (@$orders) {
+            if ($args{type}) {
+                next ORDER unless $row->{type} eq $args{type};
+            }
             $row->{pair} = $pair unless $args{pair};
             push @rows, $row;
         }
