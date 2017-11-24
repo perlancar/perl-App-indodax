@@ -4,7 +4,7 @@ package App::btcindo;
 # VERSION
 
 1;
-# ABSTRACT: CLI for bitcoin.co.id
+# ABSTRACT: CLI for bitcoin.co.id (VIP)
 
 =head1 SYNOPSIS
 

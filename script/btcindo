@@ -177,7 +177,7 @@ sub _init {
 
 $SPEC{':package'} = {
     v => 1.1,
-    summary => 'CLI for bitcoin.co.id',
+    summary => 'CLI for bitcoin.co.id (VIP)',
 };
 
 $SPEC{ticker} = {
