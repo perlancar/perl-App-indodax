@@ -1,3 +1,9 @@
+0.011   2017-11-24 (PERLANCAR)
+
+	- [Bugfix] balance: Fix logic error and don't die if a balance is
+	  not in either IDR/BTC market e.g. STR but just ignore it.
+
+
 0.010   2017-11-24 (PERLANCAR)
 
 	- [ux] balance: Add -e as shortcut for --with-idr-estimates.
