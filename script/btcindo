@@ -12,7 +12,7 @@ use Perinci::CmdLine::Any;
 
 our %SPEC;
 
-my @market_pairs = (
+my @Market_Pairs = (
     'btc_idr',
     'bch_idr',
     'btg_idr',
@@ -34,28 +34,28 @@ my @market_pairs = (
     'xem_btc',
     'xrp_btc',
 );
-my @currencies = do {
+my @Currencies = do {
     my %res;
-    for (@market_pairs) { /\A(\w+)_(\w+)\z/ or die; $res{$1}++; $res{$2}++ }
+    for (@Market_Pairs) { /\A(\w+)_(\w+)\z/ or die; $res{$1}++; $res{$2}++ }
     sort keys %res;
 };
-my @idr_market_currencies = do {
+my @Idr_Market_Currencies = do {
     my %res;
-    for (@market_pairs) { /\A(\w+)_idr\z/ and $res{$1}++ }
+    for (@Market_Pairs) { /\A(\w+)_idr\z/ and $res{$1}++ }
     sort keys %res;
 };
-my @btc_market_currencies = do {
+my @Btc_Market_Currencies = do {
     my %res;
-    for (@market_pairs) { /\A(\w+)_btc\z/ and $res{$1}++ }
+    for (@Market_Pairs) { /\A(\w+)_btc\z/ and $res{$1}++ }
     sort keys %res;
 };
 
 my $sch_type = ['str*', in=>['buy','sell']];
 my $sch_txtype = ['str*', in=>['deposit','withdraw']];
-my $sch_currency = ['str*', in=>\@currencies];
+my $sch_currency = ['str*', in=>\@Currencies];
 my $sch_pair = ['str*', {
     match=>qr/\A\w{3,4}_\w{3,4}\z/,
-    in=>\@market_pairs,
+    in=>\@Market_Pairs,
 }];
 
 my %args_tapi = (
@@ -347,11 +347,11 @@ sub balance {
         $rec->{bal_total} = ($res->{return}{balance}{$currency} // 0) + ($res->{return}{balance_hold}{$currency} // 0);
         if ($currency eq 'idr') {
             # do nothing
-        } elsif (grep {$currency eq $_} @idr_market_currencies) {
+        } elsif (grep {$currency eq $_} @Idr_Market_Currencies) {
             if ($rec->{bal_total} > 0) {
                 push @idr_markets, $currency;
             }
-        } elsif ($rec->{bal_total} > 0 && grep {$currency eq $_} @btc_market_currencies) {
+        } elsif ($rec->{bal_total} > 0 && grep {$currency eq $_} @Btc_Market_Currencies) {
             if ($rec->{bal_total} > 0) {
                 push @idr_markets, "btc" unless grep {$_ eq 'btc'} @idr_markets;
                 push @btc_markets, $currency;
@@ -435,7 +435,7 @@ sub hold_details {
 
     my @rows;
     if ($bal_held > 0) {
-        for my $pair (@market_pairs) {
+        for my $pair (@Market_Pairs) {
             #log_trace "pair=%s", $pair;
             my $buy_with_currency;
             my $currency2;
@@ -708,7 +708,7 @@ sub open_orders {
 
     my @rows;
   PAIR:
-    for my $pair (@market_pairs) {
+    for my $pair (@Market_Pairs) {
         #log_trace "pair=%s", $pair;
         if ($args{pair}) {
             next PAIR unless $pair eq $args{pair};
@@ -835,7 +835,7 @@ sub cancel_orders {
     _init(\%args);
 
   PAIR:
-    for my $pair (@market_pairs) {
+    for my $pair (@Market_Pairs) {
         #log_trace "pair=%s", $pair;
         if ($args{pair}) {
             unless ($pair eq $args{pair}) {
