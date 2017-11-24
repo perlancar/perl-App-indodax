@@ -770,25 +770,24 @@ $SPEC{cancel_order} = {
             pos => 1,
         },
     },
+    features => {
+        dry_run => 1,
+    },
 };
 sub cancel_order {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->cancel_order(
-        type => $args{type},
-        order_id => $args{order_id},
-    )->{return};
-
-    my $fnum0 = [number => {precision=>0}];
-    my $fnum8 = [number => {precision=>8}];
-
-    my $resmeta = {};
-    $resmeta->{'table.fields'}        = [qw/order_id submit_time type price order_idr remain_idr order_btc remain_btc/];
-    $resmeta->{'table.field_formats'} = [undef, 'iso8601_datetime', undef, $fnum0, $fnum0, $fnum0, $fnum8, $fnum8];
-    $resmeta->{'table.field_aligns'}  = [qw/right left left right right right right right/];
-
-    [200, "OK"];
+    if ($args{-dry_run}) {
+        # XXX check if order exists
+        [200, "OK (dry-run)"];
+    } else {
+        $btcindo->cancel_order(
+            type => $args{type},
+            order_id => $args{order_id},
+        );
+        [200, "OK"];
+    }
 }
 
 # MAIN
