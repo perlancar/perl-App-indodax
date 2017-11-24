@@ -351,14 +351,16 @@ sub balance {
             if ($rec->{bal_total} > 0) {
                 push @idr_markets, $currency;
             }
-        } elsif ($rec->{bal_total} > 0 && grep {$currency eq $_} @Btc_Market_Currencies) {
+        } elsif (grep {$currency eq $_} @Btc_Market_Currencies) {
             if ($rec->{bal_total} > 0) {
                 push @idr_markets, "btc" unless grep {$_ eq 'btc'} @idr_markets;
                 push @btc_markets, $currency;
             }
         } else {
-            return [500, "Don't know where to find current price for ".
-                        "'$currency' (not found in IDR markets nor BTC markets)"];
+            if ($rec->{bal_total} > 0) {
+                log_error "Don't know where to find current price for ".
+                    "'$currency' (not found in IDR markets nor BTC markets), skipped";
+            }
         }
         push @recs, $rec;
     }
