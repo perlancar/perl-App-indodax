@@ -19,6 +19,7 @@ my @Market_Pairs = (
     'eth_idr',
     'etc_idr',
     'ltc_idr',
+    'nxt_idr',
     'waves_idr',
     'xlm_idr',
     'xrp_idr',
