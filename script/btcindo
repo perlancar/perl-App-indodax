@@ -385,6 +385,9 @@ sub balance {
         push @recs, $rec;
     }
 
+    my $fnum0 = [number => {precision=>0}];
+    my $fnum8 = [number => {precision=>8}];
+
     my %resmeta;
     if ($args{with_idr_estimates}) {
         my %idr_prices;
@@ -430,9 +433,13 @@ sub balance {
             held_est_idr  => $tot_held_est_idr,
             total_est_idr => $tot_total_est_idr,
         };
-        $resmeta{'table.fields'} = [qw/currency bal_avail price_btc price_idr avail_est_idr bal_held held_est_idr bal_total total_est_idr/];
+        $resmeta{'table.fields'}        = [qw/currency bal_avail price_btc price_idr avail_est_idr bal_held held_est_idr bal_total total_est_idr/];
+        $resmeta{'table.field_aligns'}  = [qw/left     right     right     right     right         right    right        right     right/];
+        $resmeta{'table.field_formats'} = [undef,      undef,    $fnum8,   $fnum0,   $fnum0,       $fnum8,  $fnum0,      $fnum8,   $fnum0];
     } else {
-        $resmeta{'table.fields'} = [qw/currency bal_avail bal_held bal_total/];
+        $resmeta{'table.fields'}        = [qw/currency bal_avail bal_held bal_total/];
+        $resmeta{'table.field_aligns'}  = [qw/left     right     right    right/];
+        $resmeta{'table.field_formats'} = [undef,      $fnum8,   $fnum8,  $fnum8,];
     }
 
     [200, "OK", \@recs, \%resmeta];
