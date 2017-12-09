@@ -489,6 +489,7 @@ sub hold_details {
                         pair              => $pair,
                         submit_time       => $order->{submit_time},
                         type              => $order->{type},
+                        price             => $order->{price},
                         amount            => $order->{"remain_$currency"},
                     };
                 } else {
@@ -498,6 +499,7 @@ sub hold_details {
                         pair              => $pair,
                         submit_time       => $order->{submit_time},
                         type              => $order->{type},
+                        price             => $order->{price},
                         amount            => $order->{"remain_$currency"},
                     };
                 }
@@ -512,10 +514,12 @@ sub hold_details {
     my $fnum0 = [number => {precision=>0}];
     my $fnum8 = [number => {precision=>8}];
 
+    my $fnum  = $currency eq 'idr' ? $fnum0 : $fnum8;
+
     my %resmeta;
-    $resmeta{'table.fields'}        = [qw/order_id pair submit_time type amount/];
-    $resmeta{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $currency eq 'idr' ? $fnum0 : $fnum8];
-    $resmeta{'table.field_aligns'}  = [qw/right    left left        left right/];
+    $resmeta{'table.fields'}        = [qw/order_id pair submit_time type price amount/];
+    $resmeta{'table.field_formats'} = [undef, undef, 'iso8601_datetime', undef, $fnum, $fnum];
+    $resmeta{'table.field_aligns'}  = [qw/right    left left        left right right/];
 
     [200, "OK", \@rows, \%resmeta];
 }
