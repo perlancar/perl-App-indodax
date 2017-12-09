@@ -1,3 +1,9 @@
+0.013   2017-12-09 (PERLANCAR)
+
+	- Handle XLM <-> STR symbol confusion (we use XLM at the CLI level,
+	  but the JSON API & TAPI still use STR).
+
+
 0.012   2017-12-05 (PERLANCAR)
 
 	- Add market pair: nxt_idr.
