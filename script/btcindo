@@ -12,6 +12,14 @@ use Perinci::CmdLine::Any;
 
 our %SPEC;
 
+my %Canonical_Currencies = (
+    # the JSON API/TAPI still uses STR instead of XLM for Stellar Lumens
+    str => 'xlm',
+);
+my %Rev_Canonical_Currencies = (
+    xlm => 'str',
+);
+
 my @Market_Pairs = (
     'btc_idr',
     'bch_idr',
@@ -177,6 +185,16 @@ sub _init {
     );
 }
 
+sub _convert_pair {
+    my $pair = shift;
+    my ($cur1, $cur2) = $pair =~ /\A(\w{3,5})_(\w{3,5})\z/
+        or return $pair;
+    for ($cur1, $cur2) {
+        $_ = $Rev_Canonical_Currencies{$_} // $_;
+    }
+    "${cur1}_$cur2";
+}
+
 $SPEC{':package'} = {
     v => 1.1,
     summary => 'CLI for bitcoin.co.id (VIP)',
@@ -340,12 +358,13 @@ sub balance {
     my @recs;
     my @idr_markets;
     my @btc_markets;
-    for my $currency (sort keys %{$res->{return}{balance}}) {
+    for my $currency0 (sort keys %{$res->{return}{balance}}) {
+        my $currency = $Canonical_Currencies{$currency0} // $currency0;
         my $rec = {};
         $rec->{currency} = $currency;
-        $rec->{bal_avail} = $res->{return}{balance}{$currency} // 0;
-        $rec->{bal_held}  = $res->{return}{balance_hold}{$currency} // 0;
-        $rec->{bal_total} = ($res->{return}{balance}{$currency} // 0) + ($res->{return}{balance_hold}{$currency} // 0);
+        $rec->{bal_avail} = $res->{return}{balance}{$currency0} // 0;
+        $rec->{bal_held}  = $res->{return}{balance_hold}{$currency0} // 0;
+        $rec->{bal_total} = ($res->{return}{balance}{$currency0} // 0) + ($res->{return}{balance_hold}{$currency0} // 0);
         if ($currency eq 'idr') {
             # do nothing
         } elsif (grep {$currency eq $_} @Idr_Market_Currencies) {
@@ -370,12 +389,12 @@ sub balance {
     if ($args{with_idr_estimates}) {
         my %idr_prices;
         for my $currency (@idr_markets) {
-            my $res = $btcindo->get_ticker(pair => "${currency}_idr");
+            my $res = $btcindo->get_ticker(pair => _convert_pair("${currency}_idr"));
             $idr_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
         }
         my %btc_prices;
         for my $currency (@btc_markets) {
-            my $res = $btcindo->get_ticker(pair => "${currency}_btc");
+            my $res = $btcindo->get_ticker(pair => _convert_pair("${currency}_btc"));
             $btc_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
         }
 
@@ -432,9 +451,10 @@ sub hold_details {
     _init(\%args);
 
     my $currency = $args{currency};
+    my $currency0 = $Rev_Canonical_Currencies{$currency} // $currency;
     my $res = $btcindo->get_info;
-    my $bal      = $res->{return}{balance}{$currency}      // 0;
-    my $bal_held = $res->{return}{balance_hold}{$currency} // 0;
+    my $bal      = $res->{return}{balance}{$currency0}      // 0;
+    my $bal_held = $res->{return}{balance_hold}{$currency0} // 0;
 
     my @rows;
     if ($bal_held > 0) {
@@ -454,7 +474,7 @@ sub hold_details {
             my $orders;
             eval {
                 $orders = $btcindo->get_open_orders(
-                    pair => $pair,
+                    pair => _convert_pair($pair),
                 )->{return}{orders};
             };
             if ($@) {
@@ -597,7 +617,7 @@ sub profit {
     #}
     # XXX if actual balance is larger?
 
-    my $res2 = $btcindo->get_ticker(pair => $args{pair});
+    my $res2 = $btcindo->get_ticker(pair => _convert_pair($args{pair}));
     my $cur_price = ($res2->{ticker}{buy} + $res2->{ticker}{sell}) / 2;
 
     [200, "OK", {
@@ -672,7 +692,7 @@ sub trade_history {
     _init(\%args);
 
     my $res = $btcindo->get_trade_history(
-        pair => $args{pair},
+        pair => _convert_pair($args{pair}),
         (since => $args{time_from}) x !!(defined $args{time_from}),
         (end   => $args{time_to}  ) x !!(defined $args{time_to}  ),
         (from_id => $args{trade_id_from}) x !!(defined $args{trade_id_from}),
@@ -719,7 +739,7 @@ sub open_orders {
         my $orders;
         eval {
             $orders = $btcindo->get_open_orders(
-                pair => $pair,
+                pair => _convert_pair($pair),
             )->{return}{orders};
         };
 
@@ -776,7 +796,7 @@ sub create_order {
     _init(\%args);
 
     my $res = $btcindo->create_order(
-        pair => $args{pair},
+        pair => _convert_pair($args{pair}),
         type => $args{type},
         price => $args{price},
         (idr => $args{idr}) x !!(defined $args{idr}),
@@ -813,7 +833,7 @@ sub cancel_order {
     } else {
         $btcindo->cancel_order(
             type => $args{type},
-            pair => $args{pair},
+            pair => _convert_pair($args{pair}),
             order_id => $args{order_id},
         );
         [200, "OK"];
@@ -855,7 +875,7 @@ sub cancel_orders {
         my $orders;
         eval {
             $orders = $btcindo->get_open_orders(
-                pair => $pair,
+                pair => _convert_pair($pair),
             )->{return}{orders};
         };
         if ($@) {
@@ -877,7 +897,7 @@ sub cancel_orders {
                 eval {
                     $btcindo->cancel_order(
                         type => $order->{type},
-                        pair => $pair,
+                        pair => _convert_pair($pair),
                         order_id => $order->{order_id},
                     );
                 };
