@@ -427,15 +427,26 @@ sub balance {
             $tot_held_est_idr  += $rec->{held_est_idr};
             $tot_total_est_idr += $rec->{total_est_idr};
         }
+
+        # calculate percentages
+        for my $rec (@recs) {
+            if ($tot_total_est_idr > 0) {
+                $rec->{pct_est_idr} = $rec->{total_est_idr} / $tot_total_est_idr;
+            } else {
+                $rec->{pct_est_idr} = 0;
+            }
+        }
+
         push @recs, {
             currency => 'est_idr',
             avail_est_idr => $tot_avail_est_idr,
             held_est_idr  => $tot_held_est_idr,
             total_est_idr => $tot_total_est_idr,
+            pct_est_idr   => 1,
         };
-        $resmeta{'table.fields'}        = [qw/currency bal_avail price_btc price_idr avail_est_idr bal_held held_est_idr bal_total total_est_idr/];
-        $resmeta{'table.field_aligns'}  = [qw/left     right     right     right     right         right    right        right     right/];
-        $resmeta{'table.field_formats'} = [undef,      undef,    $fnum8,   $fnum0,   $fnum0,       $fnum8,  $fnum0,      $fnum8,   $fnum0];
+        $resmeta{'table.fields'}        = [qw/currency bal_avail price_btc price_idr avail_est_idr bal_held held_est_idr bal_total total_est_idr pct_est_idr/];
+        $resmeta{'table.field_aligns'}  = [qw/left     right     right     right     right         right    right        right     right         right/];
+        $resmeta{'table.field_formats'} = [undef,      undef,    $fnum8,   $fnum0,   $fnum0,       $fnum8,  $fnum0,      $fnum8,   $fnum0,       'percent'];
     } else {
         $resmeta{'table.fields'}        = [qw/currency bal_avail bal_held bal_total/];
         $resmeta{'table.field_aligns'}  = [qw/left     right     right    right/];
