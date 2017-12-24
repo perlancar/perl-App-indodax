@@ -15,9 +15,12 @@ our %SPEC;
 my %Canonical_Currencies = (
     # the JSON API/TAPI still uses STR instead of XLM for Stellar Lumens
     str => 'xlm',
+    # the JSON API/TAPI still uses DRK (DarkCoin) instead of DASH for Dash
+    drk => 'dash',
 );
 my %Rev_Canonical_Currencies = (
     xlm => 'str',
+    dash => 'drk',
 );
 
 my @Market_Pairs = (
