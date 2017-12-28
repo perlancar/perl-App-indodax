@@ -26,6 +26,8 @@ my %Rev_Canonical_Currencies = (
     xem => 'nem',
 );
 
+my @Markets = qw(idr btc);
+
 my @Market_Pairs = (
     'btc_idr',
     'bch_idr',
@@ -71,6 +73,9 @@ my $sch_currency = ['str*', in=>\@Currencies];
 my $sch_pair = ['str*', {
     match=>qr/\A\w{3,4}_\w{3,4}\z/,
     in=>\@Market_Pairs,
+}];
+my $sch_market = ['str*', {
+    in=>\@Markets,
 }];
 
 my %args_tapi = (
@@ -159,6 +164,23 @@ my %arg_0_pair = (
     },
 );
 
+my %arg_market = (
+    market => {
+        summary => 'Market',
+        schema => $sch_market,
+        default => 'idr',
+    },
+);
+
+my %arg_0_market = (
+    market => {
+        summary => 'Market',
+        schema => $sch_market,
+        default => 'idr',
+        pos => 0,
+    },
+);
+
 my %arg_0_type = (
     type => {
         schema => $sch_type,
@@ -191,6 +213,7 @@ sub _init {
     );
 }
 
+# convert CLI-level pair to API-level
 sub _convert_pair {
     my $pair = shift;
     my ($cur1, $cur2) = $pair =~ /\A(\w{3,5})_(\w{3,5})\z/
@@ -744,6 +767,60 @@ sub trade_history {
     [200, "OK", \@rows, $resmeta];
 }
 
+$SPEC{trade_history_total} = {
+    v => 1.1,
+    summary => 'Show total amount of trades',
+    args => {
+        %args_tapi,
+        %arg_0_market,
+        %args_filter_time,
+    },
+};
+sub trade_history_total {
+    my %args = @_;
+    _init(\%args);
+
+    my %res = (
+        num_sells => 0,
+        num_buys  => 0,
+        total_amount => 0,
+        total_fee    => 0,
+    );
+
+    for my $pair (@Market_Pairs) {
+        my ($cur1, $cur2) = $pair =~ /(\w+)_(\w+)$/;
+        next unless $cur2 eq $args{market};
+
+        my $pair0 = _convert_pair($pair);
+        my ($cur10, $cur20) = $pair0 =~ /(\w+)_(\w+)$/;
+
+        my $res0;
+        eval {
+            $res0 = $btcindo->get_trade_history(
+                pair => $pair0,
+                (since => $args{time_from}) x !!(defined $args{time_from}),
+                (end   => $args{time_to}  ) x !!(defined $args{time_to}  ),
+            )->{return};
+        };
+        if ($@) {
+            log_warn "Can't get trade history for pair $pair: $@, skipped";
+            next;
+        }
+
+        for my $row (@{ $res0->{trades} }) {
+            if ($row->{type} eq 'sell') {
+                $res{num_sells}++;
+            } elsif ($row->{type} eq 'buy') {
+                $res{num_buys}++;
+            }
+            $res{total_amount} += $row->{$cur10} * $row->{price};
+            $res{total_fee}    += $row->{fee};
+        }
+    }
+
+    [200, "OK", \%res];
+}
+
 $SPEC{open_orders} = {
     v => 1.1,
     summary => 'Show open orders',
@@ -981,6 +1058,7 @@ Perinci::CmdLine::Any->new(
 
         # not yet
         #"profit" => { url => '/main/profit', },
+        "trade-history-total" => { url => '/main/trade_history_total', show_in_help => 0 },
     },
     log => 1,
 )->run;
