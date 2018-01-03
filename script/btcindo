@@ -980,7 +980,7 @@ Perinci::CmdLine::Any->new(
         "trade" => { url => '/main/create_order', },
 
         # not yet
-        #"profit" => { url => '/main/profit', },
+        "profit" => { url => '/main/profit', show_in_help => 0, },
     },
     log => 1,
 )->run;
