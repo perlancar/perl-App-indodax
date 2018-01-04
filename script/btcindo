@@ -34,6 +34,7 @@ my @Market_Pairs = (
     'btg_idr',
     'eth_idr',
     'etc_idr',
+    'ignis_idr',
     'ltc_idr',
     'nxt_idr',
     'waves_idr',
