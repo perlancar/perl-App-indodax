@@ -10,7 +10,7 @@ use Log::ger;
 
 our %SPEC;
 
-my %Canonical_Currencies = (
+our %Canonical_Currencies = (
     # the JSON API/TAPI still uses STR instead of XLM for Stellar Lumens
     str => 'xlm',
     # the JSON API/TAPI still uses DRK (DarkCoin) instead of DASH for Dash
@@ -18,15 +18,15 @@ my %Canonical_Currencies = (
     # the JSON API/TAPI still uses NEM instead of XEM
     nem => 'xem',
 );
-my %Rev_Canonical_Currencies = (
+our %Rev_Canonical_Currencies = (
     xlm => 'str',
     dash => 'drk',
     xem => 'nem',
 );
 
-my @Markets = qw(idr btc);
+our @Markets = qw(idr btc);
 
-my @Market_Pairs = (
+our @Market_Pairs = (
     'btc_idr',
     'bch_idr',
     'btg_idr',
@@ -50,17 +50,17 @@ my @Market_Pairs = (
     'xem_btc',
     'xrp_btc',
 );
-my @Currencies = do {
+our @Currencies = do {
     my %res;
     for (@Market_Pairs) { /\A(\w+)_(\w+)\z/ or die; $res{$1}++; $res{$2}++ }
     sort keys %res;
 };
-my @Idr_Market_Currencies = do {
+our @Idr_Market_Currencies = do {
     my %res;
     for (@Market_Pairs) { /\A(\w+)_idr\z/ and $res{$1}++ }
     sort keys %res;
 };
-my @Btc_Market_Currencies = do {
+our @Btc_Market_Currencies = do {
     my %res;
     for (@Market_Pairs) { /\A(\w+)_btc\z/ and $res{$1}++ }
     sort keys %res;
