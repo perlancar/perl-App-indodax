@@ -340,13 +340,16 @@ _
             schema => ['str*', in=>[qw/day all/]],
             default => 'day',
         },
+        # XXX pair (API chartdata only available for btc_idr at the moment)
     },
 };
 sub price_history {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_price_history(period => $args{period})->{chart};
+    my $res = $btcindo->get_price_history(
+        period => $args{period},
+    )->{chart};
 
     my @rows;
     for my $row (@$res) {
