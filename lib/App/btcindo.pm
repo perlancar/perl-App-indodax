@@ -35,6 +35,7 @@ our @Market_Pairs = (
     'ignis_idr',
     'ltc_idr',
     'nxt_idr',
+    'ten_idr',
     'waves_idr',
     'xlm_idr',
     'xrp_idr',
