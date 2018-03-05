@@ -47,8 +47,8 @@ Perinci::CmdLine::Any->new(
 
 =head1 SYNOPSIS
 
-First, create an account at L<bitcoin.co.id>, create the trade API key then
-insert the API key and secret key in F<~/.config/btcindo.conf>. Since the
+First, create an account at L<https://bitcoin.co.id>, create the trade API key
+then insert the API key and secret key in F<~/.config/btcindo.conf>. Since the
 configuration file contains the API secret key, please make sure that the
 permission of the file is set so that unauthorized users cannot read it (e.g.
 chmod it to 0600).
