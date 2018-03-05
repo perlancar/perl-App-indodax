@@ -309,8 +309,7 @@ $SPEC{ticker} = {
     v => 1.1,
     summary => 'Show ticker',
     args => {
-        # currently only btc_idr is provided by the API so we comment this out
-        #%arg_0_pair,
+        %arg_0_pair,
     },
 };
 sub ticker {
