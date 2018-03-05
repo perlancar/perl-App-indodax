@@ -411,6 +411,7 @@ _
             default => 'day',
         },
         # XXX pair (API chartdata only available for btc_idr at the moment)
+        # %arg_0_pair,
     },
 };
 sub price_history {
@@ -419,6 +420,7 @@ sub price_history {
 
     my $res = $btcindo->get_price_history(
         period => $args{period},
+        # pair => $args{pair},
     )->{chart};
 
     my @rows;
