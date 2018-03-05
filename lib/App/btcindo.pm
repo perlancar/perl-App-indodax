@@ -322,6 +322,7 @@ $SPEC{trades} = {
     v => 1.1,
     summary => 'Show latest trades',
     args => {
+        %arg_0_pair,
         %arg_filter_type,
     },
 };
@@ -329,7 +330,9 @@ sub trades {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_trades;
+    my $res = $btcindo->get_trades(
+        pair => $args{pair},
+    );
 
     my @rows;
     for my $row (@$res) {
@@ -355,6 +358,7 @@ $SPEC{depth} = {
     v => 1.1,
     summary => 'Show depth',
     args => {
+        %arg_0_pair,
         %arg_filter_type,
     },
 };
@@ -362,7 +366,9 @@ sub depth {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_depth;
+    my $res = $btcindo->get_depth(
+        pair => $args{pair},
+    );
     my @rows;
     for my $type (keys %$res) {
         next if $args{type} && $type ne $args{type};
