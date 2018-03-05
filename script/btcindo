@@ -14,6 +14,9 @@ my $prefix = '/App/btcindo/';
 Perinci::CmdLine::Any->new(
     url => $prefix,
     subcommands => {
+        public          => { url => "${prefix}public" },
+        private         => { url => "${prefix}private" },
+
         # public
         ticker          => { url => "${prefix}ticker", },
         trades          => { url => "${prefix}trades", },

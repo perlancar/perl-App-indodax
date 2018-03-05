@@ -202,6 +202,35 @@ my %arg_0_currency = (
     },
 );
 
+my %args_public_api = (
+    method => {
+        schema => ['str*'],
+        default => 'GET',
+    },
+    uri => {
+        schema => ['str*', match => qr!\A/!],
+        pos => 0,
+        req => 1,
+    },
+    args => {
+        'x.name.is_plural' => 1,
+        'x.name.singular' => 'arg',
+        schema => ['hash*', of=>'str'],
+        pos => 1,
+        greedy => 1,
+    },
+);
+
+my %args_private_api = (
+    args => {
+        'x.name.is_plural' => 1,
+        'x.name.singular' => 'arg',
+        schema => ['hash*', of=>'str'],
+        pos => 1,
+        greedy => 1,
+    },
+);
+
 my $btcindo;
 
 sub _init {
@@ -239,6 +268,41 @@ sub pairs {
     my %args = @_;
     _init(\%args);
     [200, "OK", \@Market_Pairs];
+}
+
+$SPEC{public} = {
+    v => 1.1,
+    summary => 'Perform public API request',
+    args => {
+        %args_public_api,
+    },
+};
+sub public {
+    my %args = @_;
+
+    _init(\%args);
+    my $uri = $args{uri}; $uri = "/api$uri" unless $uri =~ m!\A/api/!; # XXX args
+    my $url = "https://vip.bitcoin.co.id$uri";
+    [200, "OK", $btcindo->_get_json($url)];
+}
+
+$SPEC{private} = {
+    v => 1.1,
+    summary => 'Perform private API (TAPI) request',
+    args => {
+        %args_private_api,
+    },
+};
+sub private {
+    my %args = @_;
+
+    _init(\%args);
+
+    my $args = $args{args};
+    my $method = delete $args->{method}
+        or return [400, "Please supply 'method' argument"];
+
+    [200, "OK", $btcindo->tapi($method, $method, $args)];
 }
 
 $SPEC{ticker} = {
