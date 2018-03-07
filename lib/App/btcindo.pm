@@ -315,7 +315,7 @@ $SPEC{ticker} = {
 sub ticker {
     my %args = @_;
     _init(\%args);
-    [200, "OK", $btcindo->get_ticker->{ticker}];
+    [200, "OK", $btcindo->get_ticker(pair => $args{pair})->{ticker}];
 }
 
 $SPEC{trades} = {
