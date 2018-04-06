@@ -1,4 +1,6 @@
-0.023   2018-04-06 (PERLANCAR) (unreleased)
+0.023   2018-04-06 (PERLANCAR)
+
+        - Add new pairs: ada_idr, bcd_idr.
 
         - Rename dist/module from App-btcindo to App-indodax.
 
