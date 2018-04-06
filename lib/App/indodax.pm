@@ -28,6 +28,8 @@ our @Markets = qw(idr btc);
 
 our @Market_Pairs = (
     'btc_idr',
+    'ada_idr',
+    'bcd_idr',
     'bch_idr',
     'btg_idr',
     'eth_idr',
