@@ -9,7 +9,7 @@ use warnings;
 
 use Perinci::CmdLine::Any;
 
-my $prefix = '/App/btcindo/';
+my $prefix = '/App/indodax/';
 
 Perinci::CmdLine::Any->new(
     url => $prefix,
@@ -51,66 +51,66 @@ Perinci::CmdLine::Any->new(
 =head1 SYNOPSIS
 
 First, create an account at L<https://bitcoin.co.id>, create the trade API key
-then insert the API key and secret key in F<~/.config/btcindo.conf>. Since the
+then insert the API key and secret key in F<~/.config/indodax.conf>. Since the
 configuration file contains the API secret key, please make sure that the
 permission of the file is set so that unauthorized users cannot read it (e.g.
 chmod it to 0600).
 
- # In ~/.config/btcindo.conf
+ # In ~/.config/indodax.conf
  key = ...
  secret = ...
 
 To list available pairs:
 
- % btcindo pairs
+ % indodax pairs
 
 To show ticker:
 
- % btcindo ticker                     ;# default pair: btc_idr
- % btcindo ticker --pair eth_idr
+ % indodax ticker                     ;# default pair: btc_idr
+ % indodax ticker --pair eth_idr
 
 To show latest trades:
 
- % btcindo trades
+ % indodax trades
 
 To show your balance:
 
- % btcindo balance
+ % indodax balance
 
 To show transaction history (Rupiah deposits & withdrawals):
 
- % btcindo tx-history
+ % indodax tx-history
 
 To show your trade history:
 
- % btcindo trade-history
- % btcindo trade-history --time-from 2017-05-31
- % btcindo trade-history --trade-id-from 1200000 --trade-id-to 1200100
+ % indodax trade-history
+ % indodax trade-history --time-from 2017-05-31
+ % indodax trade-history --trade-id-from 1200000 --trade-id-to 1200100
 
 To show your open/pending orders:
 
- % btcindo open-orders
+ % indodax open-orders
 
 To create a new order:
 
  # buy Rp 1.500.000-worth of bitcoin at Rp 34.000.000/BTC
- % btcindo trade buy 34000000 --idr 1500000
+ % indodax trade buy 34000000 --idr 1500000
 
  # sell 0.01 bitcoin at Rp 38.000.000/BTC (create-order is alias for trade)
- % btcindo create-order sell 38000000 --btc 0.01
+ % indodax create-order sell 38000000 --btc 0.01
 
 Cancel an existing order:
 
- % btcindo cancel-order sell 2345678 ;# btc_idr
- % btcindo cancel-order sell 345678 --pair bch_idr
+ % indodax cancel-order sell 2345678 ;# btc_idr
+ % indodax cancel-order sell 345678 --pair bch_idr
 
 Cancelling multiple orders in one go:
 
- % btcindo cancel-all-orders
- % btcindo cancel-orders --type buy
- % btcindo cancel-orders --type buy --pair btc_idr
- % btcindo cancel-orders --currency idr
+ % indodax cancel-all-orders
+ % indodax cancel-orders --type buy
+ % indodax cancel-orders --type buy --pair btc_idr
+ % indodax cancel-orders --currency idr
 
 For other available commands, see the help message or documentation:
 
- % btcindo -h
+ % indodax -h

@@ -1,4 +1,4 @@
-package App::btcindo;
+package App::indodax;
 
 # DATE
 # VERSION
@@ -231,12 +231,12 @@ my %args_private_api = (
     },
 );
 
-my $btcindo;
+my $indodax;
 
 sub _init {
-    require Finance::BTCIndo;
+    require Finance::Indodax;
     my ($args) = @_;
-    $btcindo //= Finance::BTCIndo->new(
+    $indodax //= Finance::Indodax->new(
         (key    => $args->{key}   ) x !!(defined $args->{key}),
         (secret => $args->{secret}) x !!(defined $args->{secret}),
     );
@@ -255,7 +255,7 @@ sub _convert_pair {
 
 $SPEC{':package'} = {
     v => 1.1,
-    summary => 'CLI for bitcoin.co.id (VIP)',
+    summary => 'CLI for Indodax.com',
 };
 
 $SPEC{pairs} = {
@@ -282,8 +282,8 @@ sub public {
 
     _init(\%args);
     my $uri = $args{uri}; $uri = "/api$uri" unless $uri =~ m!\A/api/!; # XXX args
-    my $url = "https://vip.bitcoin.co.id$uri";
-    [200, "OK", $btcindo->_get_json($url)];
+    my $url = "https://www.indodax.com$uri";
+    [200, "OK", $indodax->_get_json($url)];
 }
 
 $SPEC{private} = {
@@ -302,7 +302,7 @@ sub private {
     my $method = delete $args->{method}
         or return [400, "Please supply 'method' argument"];
 
-    [200, "OK", $btcindo->tapi($method, $method, $args)];
+    [200, "OK", $indodax->tapi($method, $method, $args)];
 }
 
 $SPEC{ticker} = {
@@ -315,7 +315,7 @@ $SPEC{ticker} = {
 sub ticker {
     my %args = @_;
     _init(\%args);
-    [200, "OK", $btcindo->get_ticker(pair => $args{pair})->{ticker}];
+    [200, "OK", $indodax->get_ticker(pair => $args{pair})->{ticker}];
 }
 
 $SPEC{trades} = {
@@ -330,7 +330,7 @@ sub trades {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_trades(
+    my $res = $indodax->get_trades(
         pair => $args{pair},
     );
 
@@ -366,7 +366,7 @@ sub depth {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_depth(
+    my $res = $indodax->get_depth(
         pair => $args{pair},
     );
     my @rows;
@@ -418,7 +418,7 @@ sub price_history {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_price_history(
+    my $res = $indodax->get_price_history(
         period => $args{period},
         # pair => $args{pair},
     )->{chart};
@@ -450,7 +450,7 @@ sub info {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_info;
+    my $res = $indodax->get_info;
     [200, "OK", $res];
 }
 
@@ -470,7 +470,7 @@ sub balance {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_info;
+    my $res = $indodax->get_info;
     my @recs;
     my @idr_markets;
     my @btc_markets;
@@ -508,12 +508,12 @@ sub balance {
     if ($args{with_idr_estimates}) {
         my %idr_prices;
         for my $currency (@idr_markets) {
-            my $res = $btcindo->get_ticker(pair => _convert_pair("${currency}_idr"));
+            my $res = $indodax->get_ticker(pair => _convert_pair("${currency}_idr"));
             $idr_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
         }
         my %btc_prices;
         for my $currency (@btc_markets) {
-            my $res = $btcindo->get_ticker(pair => _convert_pair("${currency}_btc"));
+            my $res = $indodax->get_ticker(pair => _convert_pair("${currency}_btc"));
             $btc_prices{$currency} = ($res->{ticker}{buy} + $res->{ticker}{sell})/2;
         }
 
@@ -586,7 +586,7 @@ sub hold_details {
 
     my $currency = $args{currency};
     my $currency0 = $Rev_Canonical_Currencies{$currency} // $currency;
-    my $res = $btcindo->get_info;
+    my $res = $indodax->get_info;
     my $bal      = $res->{return}{balance}{$currency0}      // 0;
     my $bal_held = $res->{return}{balance_hold}{$currency0} // 0;
 
@@ -607,7 +607,7 @@ sub hold_details {
             }
             my $orders;
             eval {
-                $orders = $btcindo->get_open_orders(
+                $orders = $indodax->get_open_orders(
                     pair => _convert_pair($pair),
                 )->{return}{orders};
             };
@@ -755,7 +755,7 @@ sub profit {
     #}
     # XXX if actual balance is larger?
 
-    my $res2 = $btcindo->get_ticker(pair => _convert_pair($args{pair}));
+    my $res2 = $indodax->get_ticker(pair => _convert_pair($args{pair}));
     my $cur_price = ($res2->{ticker}{buy} + $res2->{ticker}{sell}) / 2;
 
     [200, "OK", {
@@ -785,7 +785,7 @@ sub tx_history {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_tx_history->{return};
+    my $res = $indodax->get_tx_history->{return};
 
     # rearrange into a single table
     my @rows;
@@ -829,7 +829,7 @@ sub trade_history {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->get_trade_history(
+    my $res = $indodax->get_trade_history(
         pair => _convert_pair($args{pair}),
         (since => $args{time_from}) x !!(defined $args{time_from}),
         (end   => $args{time_to}  ) x !!(defined $args{time_to}  ),
@@ -883,7 +883,7 @@ sub trade_history_total {
 
         my $res0;
         eval {
-            $res0 = $btcindo->get_trade_history(
+            $res0 = $indodax->get_trade_history(
                 pair => $pair0,
                 (since => $args{time_from}) x !!(defined $args{time_from}),
                 (end   => $args{time_to}  ) x !!(defined $args{time_to}  ),
@@ -930,7 +930,7 @@ sub open_orders {
         }
         my $orders;
         eval {
-            $orders = $btcindo->get_open_orders(
+            $orders = $indodax->get_open_orders(
                 pair => _convert_pair($pair),
             )->{return}{orders};
         };
@@ -987,7 +987,7 @@ sub create_order {
     my %args = @_;
     _init(\%args);
 
-    my $res = $btcindo->create_order(
+    my $res = $indodax->create_order(
         pair => _convert_pair($args{pair}),
         type => $args{type},
         price => $args{price},
@@ -1023,7 +1023,7 @@ sub cancel_order {
         # XXX check if order exists
         [200, "OK (dry-run)"];
     } else {
-        $btcindo->cancel_order(
+        $indodax->cancel_order(
             type => $args{type},
             pair => _convert_pair($args{pair}),
             order_id => $args{order_id},
@@ -1066,7 +1066,7 @@ sub cancel_orders {
         }
         my $orders;
         eval {
-            $orders = $btcindo->get_open_orders(
+            $orders = $indodax->get_open_orders(
                 pair => _convert_pair($pair),
             )->{return}{orders};
         };
@@ -1087,7 +1087,7 @@ sub cancel_orders {
             } else {
                 log_info "Cancelling order #$order->{order_id} (pair $pair) ...";
                 eval {
-                    $btcindo->cancel_order(
+                    $indodax->cancel_order(
                         type => $order->{type},
                         pair => _convert_pair($pair),
                         order_id => $order->{order_id},
@@ -1119,13 +1119,13 @@ sub cancel_all_orders {
 }
 
 1;
-# ABSTRACT: CLI for bitcoin.co.id (VIP)
+# ABSTRACT:
 
 =head1 SYNOPSIS
 
-Please see included script L<btcindo>.
+Please see included script L<indodax>.
 
 
 =head1 SEE ALSO
 
-L<Finance::BTCIndo>
+L<Finance::Indodax>
