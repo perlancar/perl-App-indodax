@@ -284,7 +284,7 @@ sub public {
 
     _init(\%args);
     my $uri = $args{uri}; $uri = "/api$uri" unless $uri =~ m!\A/api/!; # XXX args
-    my $url = "https://www.indodax.com$uri";
+    my $url = "https://indodax.com$uri";
     [200, "OK", $indodax->_get_json($url)];
 }
 
