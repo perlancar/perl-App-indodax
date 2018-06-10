@@ -114,3 +114,11 @@ Cancelling multiple orders in one go:
 For other available commands, see the help message or documentation:
 
  % indodax -h
+
+
+=head1 DESCRIPTION
+
+B<DEPRECATION WARNING:> This script is being deprecated in favor of
+L<App::cryp::Exchange::indodax> and L<cryp-exchange>, but as the latter does not
+have as many as subcommands as this script, this script is still being
+maintained.

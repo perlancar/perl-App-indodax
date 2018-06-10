@@ -10,7 +10,10 @@ use Log::ger;
 
 our %SPEC;
 
+# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
+# this app is deprecated in favor of cryp-exchange.
 our %Canonical_Currencies = (
+
     # the JSON API/TAPI still uses STR instead of XLM for Stellar Lumens
     str => 'xlm',
     # the JSON API/TAPI still uses DRK (DarkCoin) instead of DASH for Dash
@@ -1126,6 +1129,12 @@ sub cancel_all_orders {
 =head1 SYNOPSIS
 
 Please see included script L<indodax>.
+
+
+=head1 DESCRIPTION
+
+B<DEPRECATION WARNING:> This app is being deprecated in favor of
+L<App::cryp::Exchange::indodax> and L<cryp-exchange>.
 
 
 =head1 SEE ALSO
