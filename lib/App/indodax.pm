@@ -21,6 +21,9 @@ our %Canonical_Currencies = (
     # the JSON API/TAPI still uses NEM instead of XEM
     nem => 'xem',
 );
+
+# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
+# this app is deprecated in favor of cryp-exchange.
 our %Rev_Canonical_Currencies = (
     xlm => 'str',
     dash => 'drk',
@@ -29,6 +32,8 @@ our %Rev_Canonical_Currencies = (
 
 our @Markets = qw(idr btc);
 
+# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
+# this app is deprecated in favor of cryp-exchange.
 our @Market_Pairs = (
     'btc_idr',
     'ada_idr',
