@@ -10,57 +10,19 @@ use Log::ger;
 
 our %SPEC;
 
-# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
-# this app is deprecated in favor of cryp-exchange.
-our %Canonical_Currencies = (
+use App::cryp::Exchange::indodax;
 
-    # the JSON API/TAPI still uses STR instead of XLM for Stellar Lumens
-    str => 'xlm',
-    # the JSON API/TAPI still uses DRK (DarkCoin) instead of DASH for Dash
-    drk => 'dash',
-    # the JSON API/TAPI still uses NEM instead of XEM
-    nem => 'xem',
-);
-
-# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
-# this app is deprecated in favor of cryp-exchange.
-our %Rev_Canonical_Currencies = (
-    xlm => 'str',
-    dash => 'drk',
-    xem => 'nem',
-);
+our %Canonical_Currencies = (map {lc} %{ App::cryp::Exchange::indodax->data_canonical_currencies });
+our %Rev_Canonical_Currencies = (map {lc} %{ App::cryp::Exchange::indodax->data_reverse_canonical_currencies });
 
 our @Markets = qw(idr btc);
 
-# this mapping is now also maintained at App::cryp::Exchange::indodax. in time,
-# this app is deprecated in favor of cryp-exchange.
-our @Market_Pairs = (
-    'btc_idr',
-    'ada_idr',
-    'bcd_idr',
-    'bch_idr',
-    'btg_idr',
-    'eth_idr',
-    'etc_idr',
-    'ignis_idr',
-    'ltc_idr',
-    'nxt_idr',
-    'ten_idr',
-    'waves_idr',
-    'xlm_idr',
-    'xrp_idr',
-    'xzc_idr',
+our @Market_Pairs = (map {
+    my $canon = $_->{name};
+    my ($basecur, $quotecur) = split m!/!, $canon;
+    lc($basecur) . '_' . lc($quotecur);
+} @{ App::cryp::Exchange::indodax->data_pairs });
 
-    'bts_btc',
-    'dash_btc',
-    'doge_btc',
-    'eth_btc',
-    'ltc_btc',
-    'nxt_btc',
-    'xlm_btc',
-    'xem_btc',
-    'xrp_btc',
-);
 our @Currencies = do {
     my %res;
     for (@Market_Pairs) { /\A(\w+)_(\w+)\z/ or die; $res{$1}++; $res{$2}++ }
