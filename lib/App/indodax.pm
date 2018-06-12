@@ -1,4 +1,4 @@
-package App::indodax;
+0;115;0cpackage App::indodax;
 
 # DATE
 # VERSION
@@ -1102,6 +1102,12 @@ Please see included script L<indodax>.
 
 B<DEPRECATION WARNING:> This app is being deprecated in favor of
 L<App::cryp::Exchange::indodax> and L<cryp-exchange>.
+
+
+=head1 BUGS
+
+When pair is not specified, open_orders() performs a separate API call for each
+known pair; it shouldn't.
 
 
 =head1 SEE ALSO
