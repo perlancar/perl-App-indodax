@@ -1,4 +1,4 @@
-0;115;0cpackage App::indodax;
+package App::indodax;
 
 # DATE
 # VERSION
