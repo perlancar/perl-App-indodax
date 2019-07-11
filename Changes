@@ -1,4 +1,4 @@
-0.024   2018-06-12 (PERLANCAR)
+0.024   2018-06-12  Released-By: PERLANCAR
 
         - Add deprecation warning. This distribution is being deprecated in
           favor of App-cryp-exchange.
@@ -9,19 +9,19 @@
         - Update/fix API endpoint URL.
 
 
-0.023   2018-04-06 (PERLANCAR)
+0.023   2018-04-06  Released-By: PERLANCAR
 
         - Add new pairs: ada_idr, bcd_idr.
 
         - Rename dist/module from App-btcindo to App-indodax.
 
 
-0.022   2018-03-07 (PERLANCAR)
+0.022   2018-03-07  Released-By: PERLANCAR
 
 	- [Bugfix] ticker didn't respect the --pair option.
 
 
-0.021   2018-03-06 (PERLANCAR)
+0.021   2018-03-06  Released-By: PERLANCAR
 
         - Add subcommands: public, private.
 
@@ -29,44 +29,44 @@
           'btc_idr' are supported by the public API.
 
 
-0.020   2018-02-17 (PERLANCAR)
+0.020   2018-02-17  Released-By: PERLANCAR
 
 	- Add pair: ten_idr.
 
 
-0.019   2018-02-01 (PERLANCAR)
+0.019   2018-02-01  Released-By: PERLANCAR
 
 	- ticker: Remove --pair argument because the API only provides
 	  btc_idr.
 
 
-0.018   2018-02-01 (PERLANCAR)
+0.018   2018-02-01  Released-By: PERLANCAR
 
 	- Make currencies/markets data available to outside package.
 
 	- Move code to module, add subcommand 'pairs'.
 
 
-0.017   2018-01-05 (PERLANCAR)
+0.017   2018-01-05  Released-By: PERLANCAR
 
 	- Add market: ignis_idr.
 
 	- Add subcommand: trade-history-total (name?).
 
 
-0.016   2017-12-27 (PERLANCAR)
+0.016   2017-12-27  Released-By: PERLANCAR
 
 	- Handle NEM <-> XEM symbol confusion (we use XEM at the CLI level,
 	  but the JSON API & TAPI still use NEM).
 
 
-0.015   2017-12-25 (PERLANCAR)
+0.015   2017-12-25  Released-By: PERLANCAR
 
 	- Handle DASH <-> DRK symbol confusion (we use DASH at the CLI
 	  level, but the JSON API & TAPI still use DRK).
 
 
-0.014   2017-12-09 (PERLANCAR)
+0.014   2017-12-09  Released-By: PERLANCAR
 
 	- balance: Show percentage of value (in IDR) of each currency, add
           formatting/alignments.
@@ -74,31 +74,31 @@
 	- hold-details: Show price.
 
 
-0.013   2017-12-09 (PERLANCAR)
+0.013   2017-12-09  Released-By: PERLANCAR
 
 	- Handle XLM <-> STR symbol confusion (we use XLM at the CLI level,
 	  but the JSON API & TAPI still use STR).
 
 
-0.012   2017-12-05 (PERLANCAR)
+0.012   2017-12-05  Released-By: PERLANCAR
 
 	- Add market pair: nxt_idr.
 
 
-0.011   2017-11-24 (PERLANCAR)
+0.011   2017-11-24  Released-By: PERLANCAR
 
 	- [Bugfix] balance: Fix logic error and don't die if a balance is
 	  not in either IDR/BTC market e.g. STR but just ignore it.
 
 
-0.010   2017-11-24 (PERLANCAR)
+0.010   2017-11-24  Released-By: PERLANCAR
 
 	- [ux] balance: Add -e as shortcut for --with-idr-estimates.
 
 	- Forgot to add pair: btg_idr.
 
 
-0.009   2017-11-24 (PERLANCAR)
+0.009   2017-11-24  Released-By: PERLANCAR
 
 	- Tweak Abstract.
 
@@ -106,7 +106,7 @@
 	  function.
 
 
-0.008   2017-11-24 (PERLANCAR)
+0.008   2017-11-24  Released-By: PERLANCAR
 
 	- Add subcommands: cancel-orders, cancel-all-orders.
 
@@ -119,7 +119,7 @@
 	  get_open_orders() but they exist nevertheless.
 
 
-0.007   2017-11-24 (PERLANCAR)
+0.007   2017-11-24  Released-By: PERLANCAR
 
         - Disable market pair xlm_idr because VIP currently reports 'Invalid
           pair' for it.
@@ -129,12 +129,12 @@
         - [doc] Fix typo. Thanks MANWAR.
 
 
-0.006   2017-11-23 (PERLANCAR)
+0.006   2017-11-23  Released-By: PERLANCAR
 
         - Add currency: BTG (bitcoin gold).
 
 
-0.005   2017-11-19 (PERLANCAR)
+0.005   2017-11-19  Released-By: PERLANCAR
 
 	- Update currencies: +BCH (bitcoin cash), -CRAVE, +ETC (Ethereum
 	  Classic), -NBT (NuBits), -SDC (ShadowCash), +WAVES, -XPY
@@ -148,24 +148,24 @@
 	- ticker: Add option --pair.
 
 
-0.004   2017-06-03 (PERLANCAR)
+0.004   2017-06-03  Released-By: PERLANCAR
 
 	- Adjust to Finance::BTCIndo 0.005 (new period argument for
 	  'price-history').
 
 
-0.003   2017-06-01 (PERLANCAR)
+0.003   2017-06-01  Released-By: PERLANCAR
 
 	- Add subcommands: depth, price-history.
 
 
-0.002   2017-05-31 (PERLANCAR)
+0.002   2017-05-31  Released-By: PERLANCAR
 
 	- No functional changes.
 
 	- [doc] Add more examples in Synopsis.
 
 
-0.001   2017-05-31 (PERLANCAR)
+0.001   2017-05-31  Released-By: PERLANCAR
 
         - First release.
